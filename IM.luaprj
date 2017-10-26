@@ -1,0 +1,7 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+
+<Project Name="IM.luaprj" Cmd="" Arg="" Dir="" Toggle="false" >
+    <LuaFile RelativePath=".\double_array_trie.lua" />
+    <LuaFile RelativePath=".\class.lua" />
+    <LuaFile RelativePath=".\serialization.lua" />
+</Project>
