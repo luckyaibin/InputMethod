@@ -1,5 +1,12 @@
 require("serialization")
---´´½¨½Úµã£¬´«ÈëÖµºÍÊôĞÔ
+
+--å­˜å‚¨çš„æ˜¯utf8å½¢å¼çš„ï¼Œæ¯ä¸ªå­—çš„utf8ä¸²å­˜åˆ°daté‡Œ
+--ä¸€ä¸ªå­—èŠ‚charçš„èŒƒå›´ï¼ˆæš‚æ—¶ä¸ç”¨1-255ï¼Œéƒ½+1,æ–¹ä¾¿è·³è¿‡ç´¢å¼•0ï¼‰
+local WordEndFlag=1;
+local AlphabetMin=1;
+local AlphabetMax=256;
+local AlphabetCount= AlphabetMax - AlphabetMin + 1;
+--åˆ›å»ºèŠ‚ç‚¹ï¼Œä¼ å…¥å€¼å’Œå±æ€§
 function new_node(value,prop)
 	prop = prop or 0;
 	value = value or 0;
@@ -20,37 +27,33 @@ function set_prop(node,prop)
 	node.prop = prop;
 end
 
---»ñµÃÖµ
+--è·å¾—å€¼
 function get_value(node)
 	return node.value;
 end
 
 
---»ñµÃÊôĞÔ
+--è·å¾—å±æ€§
 function get_prop(node)
 	return node.prop;
 end
 
---Ò»¸ö×Ö½ÚcharµÄ·¶Î§£¨ÔİÊ±²»ÓÃ1-255£¬¶¼+1,·½±ãÌø¹ıË÷Òı0£©
-local AlphabetMin=1;
-local AlphabetMax=256;
-local AlphabetCount= AlphabetMax - AlphabetMin + 1;
 
 
---³õÊ¼»¯dat½á¹¹
+--åˆå§‹åŒ–datç»“æ„
 function dat_create()
 	local dat = {};
 	dat.base = {};
 	dat.check = {};
-	--¿ÕÏĞ¶ÓÁĞ¿ªÊ¼£¬Ã¿´Î¶¼´ÓËü¿ªÊ¼±éÀú,base[0]²»Ê¹ÓÃ£¬base[0]±£´æµÄÊÇfreelistµÄÆğÊ¼idx
+	--ç©ºé—²é˜Ÿåˆ—å¼€å§‹ï¼Œæ¯æ¬¡éƒ½ä»å®ƒå¼€å§‹éå†,base[0]ä¸ä½¿ç”¨ï¼Œbase[0]ä¿å­˜çš„æ˜¯freelistçš„èµ·å§‹idx
 	local init_size = 10--AlphabetCount * 2;
 	local base = dat.base;
 	local check = dat.check;
-	for i=0,init_size do --0 1 2 ¡£¡£¡£init_size
+	for i=0,init_size do --0 1 2 ã€‚ã€‚ã€‚init_size
 		if i==0 then
 			base[i] = new_node(-1);
 			check[i] = new_node(-init_size);
-		elseif i < init_size then--baseÖ¸ÏòÏÂÒ»¸ö¿ÕÏĞÎ»ÖÃ£¬checkÖ¸ÏòÇ°Ò»¸ö¿ÕÏĞÎ»ÖÃ¡£
+		elseif i < init_size then--baseæŒ‡å‘ä¸‹ä¸€ä¸ªç©ºé—²ä½ç½®ï¼ŒcheckæŒ‡å‘å‰ä¸€ä¸ªç©ºé—²ä½ç½®ã€‚
 			base[i] = new_node(-(i+1));
 			check[i]= new_node(-(i-1));
 		elseif i== init_size then
@@ -59,9 +62,9 @@ function dat_create()
 		end
 	end
 	dat.size = init_size;
-	dat.count = 0;--×Ó½ÚµãÊıÁ¿
+	dat.count = 0;--å­èŠ‚ç‚¹æ•°é‡
 	
-	--ÏÈÕ¼Âú×ÖÄ¸±í£¬·ÀÖ¹ÒÔºó²åÈë×Ó½ÚµãÕ¼ÓÃÍ·½áµãÎ»ÖÃ£¬´¦ÀíÆğÀ´ºÜÂé·³
+	--å…ˆå æ»¡å­—æ¯è¡¨ï¼Œé˜²æ­¢ä»¥åæ’å…¥å­èŠ‚ç‚¹å ç”¨å¤´ç»“ç‚¹ä½ç½®ï¼Œå¤„ç†èµ·æ¥å¾ˆéº»çƒ¦
 	--[[for word = AlphabetMin,AlphabetMax do 
 		dat_mark_use(dat,word);
 		set_value(dat.base[word],AlphabetCount+1);
@@ -74,7 +77,7 @@ end
 
 
 
---ÖØĞÂ·ÖÅäÄÚ´æ£¬À©´ódatÈİÁ¿
+--é‡æ–°åˆ†é…å†…å­˜ï¼Œæ‰©å¤§datå®¹é‡
 function dat_realloc(dat,factor)
 	local curr_size = dat.size;
 	factor = factor or 1.2;
@@ -85,7 +88,7 @@ function dat_realloc(dat,factor)
 	new_dat.check = {};
 	new_dat.size = new_size;
 	
-	--1. Ô­Ñù¿½±´
+	--1. åŸæ ·æ‹·è´
 	for i=0,dat.size do 
 		new_dat.base[i] = new_node();
 		new_dat.check[i] = new_node();
@@ -94,18 +97,18 @@ function dat_realloc(dat,factor)
 	end
 	local old_first_empty = -get_value(dat.base[0]);
 	local old_last_empty = -get_value(dat.check[0]);
-	set_value(new_dat.base[old_last_empty],-(dat.size+1));--×îºóÒ»¸ö¿ÕÏĞµÄÏÂÒ»¸öÖ¸ÏòĞÂ·ÖÅäµÄµÚÒ»¸ö
+	set_value(new_dat.base[old_last_empty],-(dat.size+1));--æœ€åä¸€ä¸ªç©ºé—²çš„ä¸‹ä¸€ä¸ªæŒ‡å‘æ–°åˆ†é…çš„ç¬¬ä¸€ä¸ª
 	local prop = 0;
 	for i=dat.size+1,new_size do 
 		if(i == dat.size+1) then
-			new_dat.base[i] = new_node( -(i+1),prop );--ÏÂÒ»¸ö²»±ä
-			new_dat.check[i] = new_node( - old_last_empty,prop );--µÚÒ»¸ö¿ÕÏĞµÄÇ°Ò»¸öÖ¸Ïò×îºóÒ»¸ö¿ÕÏĞ
-		elseif i==new_size then --×îºóÒ»¸ö¿ÕÏĞµÄÏÂÒ»¸öÖ¸Ïò0
+			new_dat.base[i] = new_node( -(i+1),prop );--ä¸‹ä¸€ä¸ªä¸å˜
+			new_dat.check[i] = new_node( - old_last_empty,prop );--ç¬¬ä¸€ä¸ªç©ºé—²çš„å‰ä¸€ä¸ªæŒ‡å‘æœ€åä¸€ä¸ªç©ºé—²
+		elseif i==new_size then --æœ€åä¸€ä¸ªç©ºé—²çš„ä¸‹ä¸€ä¸ªæŒ‡å‘0
 			new_dat.base[i] = new_node( -0,prop );
-			new_dat.check[i] = new_node( -(i-1) ,prop );--Ç°Ò»¸ö
+			new_dat.check[i] = new_node( -(i-1) ,prop );--å‰ä¸€ä¸ª
 		else
 			new_dat.base[i] = new_node( -(i+1),prop );
-			new_dat.check[i] = new_node( -(i-1) ,prop );--Ç°Ò»¸ö
+			new_dat.check[i] = new_node( -(i-1) ,prop );--å‰ä¸€ä¸ª
 		end
 	end
 	
@@ -122,23 +125,23 @@ function dat_realloc(dat,factor)
 	return new_dat;
 end
 
---Ê¹ÓÃµÚi¸ö¸ñ×Ó¡£
---£¡£¡£¡ÒªÔÚÊ¹ÓÃÇ°±ê¼Ç
+--ä½¿ç”¨ç¬¬iä¸ªæ ¼å­ã€‚
+--ï¼ï¼ï¼è¦åœ¨ä½¿ç”¨å‰æ ‡è®°
 function dat_mark_use(dat,i)
 	local is_free = ( get_value(dat.check[i]) <= 0 );
 	if not is_free then
 		--dat_dump(dat)
 		return;
 	end
-	assert(is_free, i .. ' ²»ÊÇ¿ÕÏĞ¸ñ×Ó')
+	assert(is_free, i .. ' ä¸æ˜¯ç©ºé—²æ ¼å­')
 	local next = - get_value(dat.base[i]);
 	local pre = -get_value(dat.check[i]);
 	set_value(dat.base[pre], -next);
 	set_value(dat.check[next],-pre);
 end
  
---ÊÍ·ÅµÚi¸ö¸ñ×Ó£¨ÈÃËüºÍÇ°ºó¿ÕÏĞ¸ñ×ÓÁ¬½ÓÆğÀ´)¡£
---£¡£¡£¡ÒªÔÚÊ¹ÓÃºó±ê¼Ç
+--é‡Šæ”¾ç¬¬iä¸ªæ ¼å­ï¼ˆè®©å®ƒå’Œå‰åç©ºé—²æ ¼å­è¿æ¥èµ·æ¥)ã€‚
+--ï¼ï¼ï¼è¦åœ¨ä½¿ç”¨åæ ‡è®°
 --[[
 i:	0		1		2		3		4
 b: 	-1		-2		-3		-4		0
@@ -146,7 +149,7 @@ c:	-4		-0		-1		-2		-3
 
 ]]
 function dat_mark_unuse(dat,i)
-	assert(not( get_value(dat.check[i]) <= 0),'²»ÄÜÊÍ·Å¿ÕÏĞ¸ñ×Ó');
+	assert(not( get_value(dat.check[i]) <= 0),'ä¸èƒ½é‡Šæ”¾ç©ºé—²æ ¼å­');
 	local pre_free = i;
 	while pre_free > 0 and get_value(dat.check[pre_free]) > 0 do 
 		pre_free = pre_free - 1;
@@ -158,9 +161,9 @@ function dat_mark_unuse(dat,i)
 	set_value(dat.check[next_free],-i);
 end
 
---Õâ¸ö±ÈÉÏÃæµÄ¸ü¿ìÒ»Ğ©
+--è¿™ä¸ªæ¯”ä¸Šé¢çš„æ›´å¿«ä¸€äº›
 function dat_mark_unuse(dat,i)
-	assert(not( get_value(dat.check[i]) <= 0),'²»ÄÜÊÍ·Å¿ÕÏĞ¸ñ×Ó');
+	assert(not( get_value(dat.check[i]) <= 0),'ä¸èƒ½é‡Šæ”¾ç©ºé—²æ ¼å­');
 	local pre_free = 0;
 	while pre_free >= 0 and get_value(dat.base[pre_free]) <= 0 do 
 		local nxt = -get_value(dat.base[pre_free]);
@@ -213,7 +216,7 @@ function dat_dump(dat)
 		.. value);
 end
 
---»ñµÃÄ³¸ö×´Ì¬sµÄËùÓĞ×Ó½Úµã
+--è·å¾—æŸä¸ªçŠ¶æ€sçš„æ‰€æœ‰å­èŠ‚ç‚¹
 function dat_get_children(dat,s)
 	local children = {};
 	
@@ -231,11 +234,11 @@ function dat_get_children(dat,s)
 end
 
 
---ÕÒ³öparent_indexµÄËùÓĞ×Ó½Úµã¿ÉÒÔÅ²¶¯µÄÎ»ÖÃ
+--æ‰¾å‡ºparent_indexçš„æ‰€æœ‰å­èŠ‚ç‚¹å¯ä»¥æŒªåŠ¨çš„ä½ç½®
 function dat_search_for(dat,parent_index,word_id_list,skip_index)
 	table.sort(word_id_list,function(a,b) return a < b end );
-	local free_curr = -get_value(dat.base[0]);--¿ÕÏĞÁĞ±íÆğÊ¼Ë÷Òı
-	if free_curr == 0 then --ÎŞ¿ÕÏĞ£¬ÖØĞÂ·ÖÅäÄÚ´æ
+	local free_curr = -get_value(dat.base[0]);--ç©ºé—²åˆ—è¡¨èµ·å§‹ç´¢å¼•
+	if free_curr == 0 then --æ— ç©ºé—²ï¼Œé‡æ–°åˆ†é…å†…å­˜
 		dat_realloc(dat);
 	end
 	local free_curr_try = -get_value(dat.base[0]);
@@ -244,37 +247,37 @@ function dat_search_for(dat,parent_index,word_id_list,skip_index)
 		local len = #word_id_list;
 		while i<=len do 
 			local word_pos = free_curr_try + word_id_list[i] -  word_id_list[1];
-			while word_pos > dat.size - 1 do--³¬¹ıÁËdatµÄ·¶Î§£¬ÖØĞÂ·ÖÅäÄÚ´æ
+			while word_pos > dat.size - 1 do--è¶…è¿‡äº†datçš„èŒƒå›´ï¼Œé‡æ–°åˆ†é…å†…å­˜
 				dat_realloc(dat);
 			end
 			if skip_index >0 and word_pos == skip_index then 
 				break;
-			elseif get_value(dat.check[word_pos]) <= 0 then--¿ÕÏĞ
+			elseif get_value(dat.check[word_pos]) <= 0 then--ç©ºé—²
 				i=i+1;
-			elseif get_value(dat.check[word_pos]) == parent_index then --Ä³¸öÆäËû×Ó½Úµãcj¡£¿ÉÒÔ±»Ä³¸öci¸²¸Ç£¬¿ÉÒÔÊ¹ÓÃ
+			elseif get_value(dat.check[word_pos]) == parent_index then --æŸä¸ªå…¶ä»–å­èŠ‚ç‚¹cjã€‚å¯ä»¥è¢«æŸä¸ªciè¦†ç›–ï¼Œå¯ä»¥ä½¿ç”¨
 				i=i+1;
-			else --²»¿ÕÏĞ£¬²»Âú×ã
+			else --ä¸ç©ºé—²ï¼Œä¸æ»¡è¶³
 				break;
 			end
 		end
-		if i==len+1 then--³É¹¦
+		if i==len+1 then--æˆåŠŸ
 			return free_curr_try;
 		else
 			free_curr_try = - get_value(dat.base[free_curr_try]);
 		end
-		if free_curr_try == 0 then --±éÀúµ½×îºóÒ»¸ö¿ÕÏĞµÄ»¹Ã»ÕÒµ½£¬ÖØĞÂ·ÖÅäÄÚ´æ
+		if free_curr_try == 0 then --éå†åˆ°æœ€åä¸€ä¸ªç©ºé—²çš„è¿˜æ²¡æ‰¾åˆ°ï¼Œé‡æ–°åˆ†é…å†…å­˜
 			dat_realloc(dat);
 		end
 	end
 end
 
---ÒÆ¶¯ parent_index µÄÄ³¸ö×Ó½Úµãci £¬³ıĞŞ¸Äparent_indexµÄbaseÖµ£¬ciµÄ×Ó½Úµãd1,d2..diµÈµÄcheckÒ²ÒªĞŞ¸Ä
---ÒÆ¶¯ parent_index µÄËùÓĞµÄ×ªÒÆ×´Ì¬ children_index_list £¬µ½ base_index ¿ªÊ¼µÄË÷Òı
--- watch_index £¬¼à²âÕâ¸öÖµÒÆ¶¯µ½ÁËÄÄ¸öĞÂÎ»ÖÃ¡£º¯Êı×îºó·µ»ØÕâ¸öĞÂÎ»ÖÃ
+--ç§»åŠ¨ parent_index çš„æŸä¸ªå­èŠ‚ç‚¹ci ï¼Œé™¤ä¿®æ”¹parent_indexçš„baseå€¼ï¼Œciçš„å­èŠ‚ç‚¹d1,d2..diç­‰çš„checkä¹Ÿè¦ä¿®æ”¹
+--ç§»åŠ¨ parent_index çš„æ‰€æœ‰çš„è½¬ç§»çŠ¶æ€ children_index_list ï¼Œåˆ° base_index å¼€å§‹çš„ç´¢å¼•
+-- watch_index ï¼Œç›‘æµ‹è¿™ä¸ªå€¼ç§»åŠ¨åˆ°äº†å“ªä¸ªæ–°ä½ç½®ã€‚å‡½æ•°æœ€åè¿”å›è¿™ä¸ªæ–°ä½ç½®
 function dat_relocate(dat,parent_index,children_index_list,base_index,watch_index) -- s:state,b:base_index;
 	local diff = base_index - children_index_list[1];
-	--diff ´óÓÚ0£¬ÕûÌå¶¼ÏòÓÒÒÆ¶¯ÁË¡£ĞèÒª´ÓÓÒÏò×ó¿ªÊ¼±éÀúÒÆ¶¯×Ó½Úµã,ÒòÎªĞÖµÜ½Úµã¼äÊÇ»á¸²¸ÇµÄ£¬ĞèÒª×¢Òâ·½Ïò¡£
-	--diff Ğ¡ÓÚ0£¬ÕûÌå¶¼Ïò×óÒÆ¶¯ÁË¡£Ïà·´
+	--diff å¤§äº0ï¼Œæ•´ä½“éƒ½å‘å³ç§»åŠ¨äº†ã€‚éœ€è¦ä»å³å‘å·¦å¼€å§‹éå†ç§»åŠ¨å­èŠ‚ç‚¹,å› ä¸ºå…„å¼ŸèŠ‚ç‚¹é—´æ˜¯ä¼šè¦†ç›–çš„ï¼Œéœ€è¦æ³¨æ„æ–¹å‘ã€‚
+	--diff å°äº0ï¼Œæ•´ä½“éƒ½å‘å·¦ç§»åŠ¨äº†ã€‚ç›¸å
 	local from,to,step;
 	if diff>0 then
 		from = #children_index_list;
@@ -293,41 +296,41 @@ function dat_relocate(dat,parent_index,children_index_list,base_index,watch_inde
 			watch_index = child_new_index;
 		end
 		dat_mark_use(dat,child_new_index);
-		--1. ¿ÉÄÜÄ³¸öchildÊÇ½«Òª¼ÓÈëµ½ parent_index µÄ×Ó½Úµã£¬ ÄÇÃ´child_index¿ÉÄÜÊÇ<=0µÄ£¬Ò²¿ÉÄÜ³¬¹ıdat´óĞ¡
-		--2. ¶ÔÓÚÄ³¸ö×Ó½Úµã£¬¼ÆËã³öÀ´µÄÏÂ±êºÍ¸¸½ÚµãÖØ¸´ÔÚÒ»ÆğÊÇ²»¿ÉÄÜµÄ£¬ÄÇÃ´Õâ¸ö×Ó½ÚµãÒ»¶¨ÊÇĞÂµÄ×Ó½Úµã£¬»¹Ã»
-		--À´µÃ¼°¼ÓÈëµ½datÀï£¬ËùÒÔĞèÒªÏŞÖÆÌõ¼ş: check[child] ~= parent_index.
+		--1. å¯èƒ½æŸä¸ªchildæ˜¯å°†è¦åŠ å…¥åˆ° parent_index çš„å­èŠ‚ç‚¹ï¼Œ é‚£ä¹ˆchild_indexå¯èƒ½æ˜¯<=0çš„ï¼Œä¹Ÿå¯èƒ½è¶…è¿‡datå¤§å°
+		--2. å¯¹äºæŸä¸ªå­èŠ‚ç‚¹ï¼Œè®¡ç®—å‡ºæ¥çš„ä¸‹æ ‡å’Œçˆ¶èŠ‚ç‚¹é‡å¤åœ¨ä¸€èµ·æ˜¯ä¸å¯èƒ½çš„ï¼Œé‚£ä¹ˆè¿™ä¸ªå­èŠ‚ç‚¹ä¸€å®šæ˜¯æ–°çš„å­èŠ‚ç‚¹ï¼Œè¿˜æ²¡
+		--æ¥å¾—åŠåŠ å…¥åˆ°daté‡Œï¼Œæ‰€ä»¥éœ€è¦é™åˆ¶æ¡ä»¶: check[child] ~= parent_index.
 		if child_index > 0 and get_value(dat.check[child_index]) == parent_index  and child_index ~= parent_index then
-			copy_node(dat.base[child_new_index],dat.base[child_index]);--¿½±´Êı¾İ
-			copy_node(dat.check[child_new_index],dat.check[child_index]);--¿½±´Êı¾İ
+			copy_node(dat.base[child_new_index],dat.base[child_index]);--æ‹·è´æ•°æ®
+			copy_node(dat.check[child_new_index],dat.check[child_index]);--æ‹·è´æ•°æ®
 			
 			local child_base = get_value(dat.base[child_index]);
-			for j=child_base + AlphabetMin,child_base+AlphabetMax do --Ä³¸ö×Ó½ÚµãÒÆ¶¯µ½ĞÂÎ»ÖÃ£¬»¹ÒªĞŞ¸Ä×Ó½ÚµãµÄ×Ó½ÚµãµÄcheck£¬Ö¸ÏòĞÂµÄÎ»ÖÃ
+			for j=child_base + AlphabetMin,child_base+AlphabetMax do --æŸä¸ªå­èŠ‚ç‚¹ç§»åŠ¨åˆ°æ–°ä½ç½®ï¼Œè¿˜è¦ä¿®æ”¹å­èŠ‚ç‚¹çš„å­èŠ‚ç‚¹çš„checkï¼ŒæŒ‡å‘æ–°çš„ä½ç½®
 				if j > 0 and j<=dat.size and get_value(dat.check[j]) == child_index and get_value(dat.check[j])~= j then
 					set_value(dat.check[j], child_new_index);
 				end
 			end
-			dat_mark_unuse (dat,child_index);--ÊÍ·Å
-		else-- child_index ½«Òª³ÉÎªsµÄ×Ó½Úµã
-			--ĞÂ½Úµã
+			dat_mark_unuse (dat,child_index);--é‡Šæ”¾
+		else-- child_index å°†è¦æˆä¸ºsçš„å­èŠ‚ç‚¹
+			--æ–°èŠ‚ç‚¹
 			set_value(dat.base[child_new_index],0);
 			set_value(dat.check[child_new_index],parent_index)
 		end
 	end
-	--ĞŞ¸Ä¸¸½ÚsµãµÄbaseÖµ :dat.base[parent_index] = dat.base[parent_index] + diff;
+	--ä¿®æ”¹çˆ¶èŠ‚sç‚¹çš„baseå€¼ :dat.base[parent_index] = dat.base[parent_index] + diff;
 	set_value(dat.base[parent_index], get_value(dat.base[parent_index]) + diff);
 	return watch_index;
 end
 
---ÏëÒª°Ñ word ²åÈë£¬×÷Îª curr_word_parent_index µÄ×Ó½Úµã£¬µ«ÊÇ curr_word_index Õâ¸öÎ»ÖÃ±»Õ¼ÓÃÁË¡£
---ÕâÊ±ºòÒÆ¶¯curr_word_parent_indexµÄËùÓĞ×Ó½Úµã£¬ÈÃ³ö conflict_index Õâ¸öÎ»ÖÃ¡£
---×îºó·µ»Øword±»²åÈë»òÅ²¶¯µ½µÄÎ»ÖÃ
+--æƒ³è¦æŠŠ word æ’å…¥ï¼Œä½œä¸º curr_word_parent_index çš„å­èŠ‚ç‚¹ï¼Œä½†æ˜¯ curr_word_index è¿™ä¸ªä½ç½®è¢«å ç”¨äº†ã€‚
+--è¿™æ—¶å€™ç§»åŠ¨curr_word_parent_indexçš„æ‰€æœ‰å­èŠ‚ç‚¹ï¼Œè®©å‡º conflict_index è¿™ä¸ªä½ç½®ã€‚
+--æœ€åè¿”å›wordè¢«æ’å…¥æˆ–æŒªåŠ¨åˆ°çš„ä½ç½®
 function dat_solve_conflict(dat,conflict_index,curr_word_parent_index,word)
 	local word_final_index;
 	local children_index_list = dat_get_children(dat,curr_word_parent_index)
 	local curr_word_index = get_value(dat.base[curr_word_parent_index]) + word;
 
-	--¿ÉÒÔ¸ù¾İË­µÄ½Úµã¶àÉÙÀ´ÒÆ¶¯ÄÄ¸ö¡£ÕâÀïÔİÊ±¼òµ¥´¦Àí,½ö½öÒÆ¶¯ curr_word_parent_indexµÄ×Ó½Úµã
-	table.insert(children_index_list,curr_word_index)--¼Ó½øÈ¥
+	--å¯ä»¥æ ¹æ®è°çš„èŠ‚ç‚¹å¤šå°‘æ¥ç§»åŠ¨å“ªä¸ªã€‚è¿™é‡Œæš‚æ—¶ç®€å•å¤„ç†,ä»…ä»…ç§»åŠ¨ curr_word_parent_indexçš„å­èŠ‚ç‚¹
+	table.insert(children_index_list,curr_word_index)--åŠ è¿›å»
 	local first_ok_index = dat_search_for(dat,curr_word_parent_index,children_index_list,conflict_index);
 	word_final_index = dat_relocate(dat,curr_word_parent_index,children_index_list,first_ok_index,curr_word_index)
 	return word_final_index;
@@ -337,72 +340,72 @@ end
 
 
 
-function dat_insert(dat,words,is_dump)
+function dat_insert(dat,words)
 	local parent_index = 0;
 	local word_index = words[1];
 	local word = words[1];
 	while word_index > dat.size do
 		dat_realloc(dat)
 	end
-	if get_value(dat.check[word_index]) <= 0 then --¿ÕÏĞ£¬Ö±½Ó²åÈë
+	if get_value(dat.check[word_index]) <= 0 then --ç©ºé—²ï¼Œç›´æ¥æ’å…¥
 		dat_mark_use(dat,word_index);
 		set_value(dat.base[word_index],0);
-		set_value(dat.check[word_index],word_index);--Í·½áµãµÄ¸¸½ÚµãÖ¸Ïò×Ô¼º
+		set_value(dat.check[word_index],word_index);--å¤´ç»“ç‚¹çš„çˆ¶èŠ‚ç‚¹æŒ‡å‘è‡ªå·±
 		parent_index = word_index;
 		
 		dat.count = dat.count + 1;
-	elseif  get_value(dat.check[word_index]) == word_index then--ÒÑ´æÔÚ£¬²»´¦Àí¡£
+	elseif  get_value(dat.check[word_index]) == word_index then--å·²å­˜åœ¨ï¼Œä¸å¤„ç†ã€‚
 		parent_index = word_index;
-	else --³åÍ»,Í·½áµã±»Õ¼ÓÃÁË
+	else --å†²çª,å¤´ç»“ç‚¹è¢«å ç”¨äº†
 		local curr_hold_parent = get_value(dat.check[word_index]);
 		local children_index_list = dat_get_children(dat,curr_hold_parent)
-		local first_ok_index = dat_search_for(dat,curr_hold_parent,children_index_list,word_index);--ÈÃ³öÍ·½áµãÎ»ÖÃ
+		local first_ok_index = dat_search_for(dat,curr_hold_parent,children_index_list,word_index);--è®©å‡ºå¤´ç»“ç‚¹ä½ç½®
 		local moved_to = dat_relocate(dat,curr_hold_parent,children_index_list,first_ok_index,word_index)
 		
 		dat_mark_use(dat,word_index);
 		set_value(dat.base[word_index],0);
-		set_value(dat.check[word_index],word_index);--Í·½áµãµÄ¸¸½ÚµãÖ¸Ïò×Ô¼º
+		set_value(dat.check[word_index],word_index);--å¤´ç»“ç‚¹çš„çˆ¶èŠ‚ç‚¹æŒ‡å‘è‡ªå·±
 		parent_index = word_index;
 		dat.count = dat.count + 1;
 	end
-	local parent_index_test = parent_index;
 	for i=2,#words do 
 		local word = words[i];
 		local word_index = get_value(dat.base[parent_index]) + word;
 		while word_index > dat.size do
 			dat_realloc(dat)
 		end
-		if word_index > 0 and get_value(dat.check[word_index]) <= 0 then --¿ÕÏĞ£¬Ö±½Ó²åÈë
+		if word_index > 0 and get_value(dat.check[word_index]) <= 0 then --ç©ºé—²ï¼Œç›´æ¥æ’å…¥
 			dat_mark_use(dat,word_index);
 			set_value(dat.base[word_index],0);
 			set_value(dat.check[word_index],parent_index);
 			parent_index = word_index;
 			dat.count = dat.count + 1;
-		elseif word_index > 0 and get_value(dat.check[word_index]) == parent_index and parent_index ~= word_index  then --ÒÑ¾­´æÔÚÁË£¬²»ĞèÒª²åÈë
+		elseif word_index > 0 and get_value(dat.check[word_index]) == parent_index and parent_index ~= word_index  then --å·²ç»å­˜åœ¨äº†ï¼Œä¸éœ€è¦æ’å…¥
 			parent_index = word_index;
-		else--³åÍ»´¦Àí
+		else--å†²çªå¤„ç†
 			parent_index = dat_solve_conflict(dat,word_index,parent_index,word)
 			dat.count = dat.count + 1;
 		end
-		parent_index_test = parent_index;
 	end
+	
+	set_prop(dat.base[parent_index],WordEndFlag);
 end
 
 
---¸ù¾İÄ³¸öË÷Òı£¬»ñµÃÕâ¸öË÷ÒıµÄ×Ö·û´®
+--æ ¹æ®æŸä¸ªç´¢å¼•ï¼Œè·å¾—è¿™ä¸ªç´¢å¼•çš„å­—ç¬¦ä¸²
 function dat_get_words(dat,idx)
 	local words = '';
 	while(true) do 
 		local parent_idx = get_value(dat.check[idx]);
-		if parent_idx <= 0 then --ÎŞĞ§
-			return '' -- 'ÎŞĞ§Î»ÖÃ'..idx
+		if parent_idx <= 0 then --æ— æ•ˆ
+			return '' -- 'æ— æ•ˆä½ç½®'..idx
 		end
 		
 		local word = '';
-		--×Ô¼ºÊÇÍ·½áµã£¬ËùÔÚÎ»ÖÃ¾ÍÊÇ±àÂë
+		--è‡ªå·±æ˜¯å¤´ç»“ç‚¹ï¼Œæ‰€åœ¨ä½ç½®å°±æ˜¯ç¼–ç 
 		if get_value(dat.check[idx]) == idx then
 			word = parent_idx;
-		else--×Ó½Úµã£¬ÓÃ×Ó½ÚµãÎ»ÖÃ£¬¼õÈ¥¸¸½ÚµãµÄbaseÖµ
+		else--å­èŠ‚ç‚¹ï¼Œç”¨å­èŠ‚ç‚¹ä½ç½®ï¼Œå‡å»çˆ¶èŠ‚ç‚¹çš„baseå€¼
 			word = idx - get_value(dat.base[parent_idx]);
 		end 
 		words =  word ..','.. words;
@@ -418,7 +421,7 @@ function dat_dump_all_words(dat)
 	local all_words = '';
 	for i=dat.size-1,0,-1 do 
 		local chindren = dat_get_children(dat,i);
-		if #chindren == 0 then--Ã»ÓĞ×Ó½ÚµãµÄ²ÅËã
+		if #chindren == 0 then--æ²¡æœ‰å­èŠ‚ç‚¹çš„æ‰ç®—
 			local str = dat_get_words(dat,i);
 			if str:len()>0 then
 				all_words = all_words .. '\n' .. str;
@@ -433,7 +436,9 @@ function dat_search(dat,words)
 	if parent_idx <=0 or parent_idx> dat.size then
 		return false;
 	end
-	if #words == 1 and get_value(dat.check[parent_idx]) == parent_idx then
+	if #words == 1 
+		and get_value(dat.check[parent_idx]) == parent_idx 
+		and get_prop(dat.base[parent_idx]) == WordEndFlag then
 		return true;
 	end
 	for i=2,#words do 
@@ -447,19 +452,195 @@ function dat_search(dat,words)
 			return false;
 		end
 	end
-	return true;
+	if get_prop(dat.base[parent_idx]) == WordEndFlag then
+		return true;
+	else
+		return false;
+	end
+end
+
+
+function dat_insert_utf8string(dat,words)
+	local parent_index = nil;
+	local word_index = string.byte(words,1);
+	while word_index > dat.size do
+		dat_realloc(dat)
+	end
+	if get_value(dat.check[word_index]) <= 0 then --ç©ºé—²ï¼Œç›´æ¥æ’å…¥
+		dat_mark_use(dat,word_index);
+		set_value(dat.base[word_index],0);
+		set_value(dat.check[word_index],word_index);--å¤´ç»“ç‚¹çš„çˆ¶èŠ‚ç‚¹æŒ‡å‘è‡ªå·±
+		parent_index = word_index;
+		
+		dat.count = dat.count + 1;
+	elseif  get_value(dat.check[word_index]) == word_index then--å·²å­˜åœ¨ï¼Œä¸å¤„ç†ã€‚
+		parent_index = word_index;
+	else --å†²çª,å¤´ç»“ç‚¹è¢«å ç”¨äº†
+		local curr_hold_parent = get_value(dat.check[word_index]);
+		local children_index_list = dat_get_children(dat,curr_hold_parent)
+		local first_ok_index = dat_search_for(dat,curr_hold_parent,children_index_list,word_index);--è®©å‡ºå¤´ç»“ç‚¹ä½ç½®
+		local moved_to = dat_relocate(dat,curr_hold_parent,children_index_list,first_ok_index,word_index)
+		
+		dat_mark_use(dat,word_index);
+		set_value(dat.base[word_index],0);
+		set_value(dat.check[word_index],word_index);--å¤´ç»“ç‚¹çš„çˆ¶èŠ‚ç‚¹æŒ‡å‘è‡ªå·±
+		parent_index = word_index;
+		dat.count = dat.count + 1;
+	end
+	
+	--------------
+	--è¿­ä»£æ¯ä¸ªutf8å­—ç¬¦çš„æ¯ä¸ªå­—èŠ‚
+	local start_index = 1;
+	while true do
+		local char = string.sub(words,start_index,start_index);
+		if char and start_index <= string.len(words) then
+			local c = string.byte(char);
+			local len = 1;
+			if 0 <= c and c <= 127 then
+				len = 1;
+			elseif 192 <= c and c <= 223 then
+				len = 2;
+			elseif 224 <= c and c <= 239 then
+				len = 3;
+			elseif 240 <= c and c <= 247 then
+				len = 4;
+			elseif 248 <= c and c <= 251 then
+				len = 5;
+			elseif 252 <= c and c <= 253 then
+				len = 6;
+			else
+				assert(nil,c .. ' is error');
+			end
+			--å¯¹äºæ¯ä¸ªå­—ç¬¦cï¼Œè¿­ä»£cçš„æ¯ä¸ªå­—èŠ‚each_byte
+			for i=start_index,start_index+len-1 do 
+				local word = string.byte(words,i)+1;
+				if not(start_index == 1 and i == start_index) then--ç¬¬ä¸€ä¸ªutf8å­—ç¬¦çš„ç¬¬ä¸€ä¸ªå­—èŠ‚å·²ç»ç‰¹æ®Šå¤„ç†è¿‡
+					local word_index = get_value(dat.base[parent_index]) + word;
+					while word_index > dat.size do
+						dat_realloc(dat)
+					end
+					if word_index > 0 and get_value(dat.check[word_index]) <= 0 then --ç©ºé—²ï¼Œç›´æ¥æ’å…¥
+						dat_mark_use(dat,word_index);
+						set_value(dat.base[word_index],0);
+						set_value(dat.check[word_index],parent_index);
+						parent_index = word_index;
+						dat.count = dat.count + 1;
+					elseif word_index > 0 and get_value(dat.check[word_index]) == parent_index and parent_index ~= word_index  then --å·²ç»å­˜åœ¨äº†ï¼Œä¸éœ€è¦æ’å…¥
+						parent_index = word_index;
+					else--å†²çªå¤„ç†
+						parent_index = dat_solve_conflict(dat,word_index,parent_index,word)
+						dat.count = dat.count + 1;
+					end
+				end
+				
+			end
+			start_index = start_index + len;
+		else
+			break;
+		end
+	end
+	set_prop(dat.base[parent_index],WordEndFlag);
+end
+
+function dat_search_utf8string(dat,words)
+	local parent_idx = string.byte(words,1) + 1;--å¤´ç»“ç‚¹è¦ç‰¹æ®Šå…ˆåˆ¤æ–­
+	if parent_idx <=0 or parent_idx> dat.size then
+		return false;
+	end
+	if #words == 1 
+		and get_value(dat.check[parent_idx]) == parent_idx 
+		and get_prop(dat.base[parent_idx]) == WordEndFlag then
+		return true;
+	end
+	
+	--è¿­ä»£æ¯ä¸ªutf8å­—ç¬¦çš„æ¯ä¸ªå­—èŠ‚
+	local start_index = 1;
+	while true do
+		local char = string.sub(words,start_index,start_index);
+		if char and start_index <= string.len(words) then
+			local c = string.byte(char);
+			local len = 1;
+			if 0 <= c and c <= 127 then
+				len = 1;
+			elseif 192 <= c and c <= 223 then
+				len = 2;
+			elseif 224 <= c and c <= 239 then
+				len = 3;
+			elseif 240 <= c and c <= 247 then
+				len = 4;
+			elseif 248 <= c and c <= 251 then
+				len = 5;
+			elseif 252 <= c and c <= 253 then
+				len = 6;
+			else
+				assert(nil,c .. ' is error');
+			end
+			--å¯¹äºæ¯ä¸ªå­—ç¬¦cï¼Œè¿­ä»£cçš„æ¯ä¸ªå­—èŠ‚each_byte
+			for i=start_index,start_index+len-1 do 
+				local word = string.byte(words,i)+1;
+				if not(start_index == 1 and i == start_index) then--ç¬¬ä¸€ä¸ªutf8å­—ç¬¦çš„ç¬¬ä¸€ä¸ªå­—èŠ‚å·²ç»ç‰¹æ®Šå¤„ç†è¿‡
+					if get_value(dat.base[parent_idx]) + word <=0 or get_value(dat.base[parent_idx]) + word > dat.size then
+						return false;
+					end
+					if get_value(dat.check [ get_value(dat.base[parent_idx]) + word ]) == parent_idx then
+						parent_idx = get_value(dat.base[parent_idx]) + word;
+					else
+						return false;
+					end
+				end
+				
+			end
+			start_index = start_index + len;
+		else
+			break;
+		end
+	end
+	--æ£€æŸ¥æœ€åä¸€ä¸ªå­—èŠ‚æ˜¯ä¸æ˜¯ç»“æŸæ ‡è®°
+	if get_prop(dat.base[parent_idx]) == WordEndFlag then
+		return true;
+	else
+		return false;
+	end
+end
+
+function test_dat_utf8()
+	local dat = dat_create(50);
+	local test_words = {
+			'ä¸­å›½',
+			'ä¸­å›½äººæ°‘',
+			'ä¸­é—´',
+			'äººæ°‘',
+			'hello',
+			'helloworld',
+		};
+	--ä¾æ¬¡æ’å…¥æ‰€æœ‰è¯
+	for k,v in pairs(test_words) do
+		dat_insert_utf8string(dat,v)
+	end
+	
+	for k,v in pairs(test_words) do
+		local find = dat_search_utf8string(dat,v);
+		if not find then
+			print('è¿™ä¸ªæ²¡æ‰¾åˆ°:',v );
+			--dat_dump(dat)
+		end
+	end
+	
+	print('1000è¯æŸ¥æ‰¾ç»“æŸ:',os.clock())
+ 
+	dat_dump(dat)
 end
 
 function test_dat2()
 	local test_words={};
 	
 	local start_time = os.clock();
-	print('¿ªÊ¼:',start_time)
-	for test_cnt = 0,300 do--100 ¸ö´Ê
-		local word_len = math.random(1,14);--Ã¿¸ö´Ê1~10µÄ³¤¶È
+	print('å¼€å§‹:',start_time)
+	for test_cnt = 0,37 do--100 ä¸ªè¯
+		local word_len = math.random(1,5);--æ¯ä¸ªè¯1~10çš„é•¿åº¦
 		local word = {};
 		for i=1,word_len do 
-			local w = math.random(1,256);--Ã¿¸ö×ÖÄ¸È¡Öµ 1~1000
+			local w = math.random(1,256);--æ¯ä¸ªå­—æ¯å–å€¼ 1~1000
 			table.insert(word,w);
 		end
 		table.insert(test_words,word);
@@ -467,20 +648,20 @@ function test_dat2()
 	
 	
 	
-	for k,v in pairs({} or test_words) do 
+	for k,v in pairs(test_words) do 
 		local v_str = '';
 		for kk,vv in pairs(v) do 
 			v_str = v_str  .. vv..',';
 		end
 		print('{' ,v_str,'},')
 	end
-	local dat = dat_create(5000);
+	local dat = dat_create(50);
 	
-	local cal_time_of_count= 50;--Ã¿¶àÉÙ¸ö¼ÆËãÒ»ÏÂÆ½¾ùÓÃÊ±£¬Ô¤¹ÀÊ£ÓàÊ±¼ä
+	local cal_time_of_count= 50;--æ¯å¤šå°‘ä¸ªè®¡ç®—ä¸€ä¸‹å¹³å‡ç”¨æ—¶ï¼Œé¢„ä¼°å‰©ä½™æ—¶é—´
 	local cal_time_curr_count = 0;
 	local cal_time_use_time = 0;
 	local cal_time_start_time = os.clock();
-	--ÒÀ´Î²åÈëËùÓĞ´Ê
+	--ä¾æ¬¡æ’å…¥æ‰€æœ‰è¯
 	for k,v in pairs(test_words) do
 		local t1 = os.clock();
 		dat_insert(dat,v)
@@ -491,7 +672,7 @@ function test_dat2()
 			cal_time_use_time = os.clock() - cal_time_start_time;
 			local average_time = cal_time_use_time / cal_time_of_count;
 			local left_time = (#test_words - k) * average_time
-			print('Ê£ÓàÊ±¼ä:',math.floor((left_time)/60),'·Ö')
+			print('å‰©ä½™æ—¶é—´:',math.floor((left_time)/60),'åˆ†')
 			cal_time_curr_count = 0;
 			cal_time_start_time = os.clock();
 		end
@@ -501,29 +682,29 @@ function test_dat2()
 		end
 	end
 	
-	print('½áÊø:',os.clock())
-	print("×¼±¸ĞòÁĞ»¯")
-	local res,err = serialize(dat)
-	print('ĞòÁĞ»¯½áÊø:',os.clock())
+	print('ç»“æŸ:',os.clock())
+	--print("å‡†å¤‡åºåˆ—åŒ–")
+	--local res,err = serialize(dat)
+	--print('åºåˆ—åŒ–ç»“æŸ:',os.clock())
 	
-	writefile('dat.bin',res);
+	--writefile('dat.bin',res);
 	
-	local content = readfile('dat.bin')
-	local dat = unserialize(content);
-	print('·´ĞòÁĞ»¯½áÊø:',os.clock())
+	--local content = readfile('dat.bin')
+	--local dat = unserialize(content);
+	--print('ååºåˆ—åŒ–ç»“æŸ:',os.clock())
 	
 	
-	for kkk=1,100 do
+	for kkk=1,1 do
 		for k,v in pairs(test_words) do
 			local find = dat_search(dat,v);
 			if not find then
-				print('Õâ¸öÃ»ÕÒµ½:',table.concat(v,',') );
+				print('è¿™ä¸ªæ²¡æ‰¾åˆ°:',table.concat(v,',') );
 				dat_dump(dat)
 			end
 		end
 	end
 	
-	print('1000´Ê²éÕÒ½áÊø:',os.clock())
+	print('1000è¯æŸ¥æ‰¾ç»“æŸ:',os.clock())
  
 	dat_dump(dat)
 end
@@ -532,39 +713,40 @@ function test_serilize()
 	local test_words={};
 	
 	local start_time = os.clock();
-	print('¿ªÊ¼:',start_time)
-	for test_cnt = 0,300 do--100 ¸ö´Ê
-		local word_len = math.random(1,14);--Ã¿¸ö´Ê1~10µÄ³¤¶È
+	print('å¼€å§‹:',start_time)
+	for test_cnt = 0,300 do--100 ä¸ªè¯
+		local word_len = math.random(1,14);--æ¯ä¸ªè¯1~10çš„é•¿åº¦
 		local word = {};
 		for i=1,word_len do 
-			local w = math.random(1,256);--Ã¿¸ö×ÖÄ¸È¡Öµ 1~1000
+			local w = math.random(1,256);--æ¯ä¸ªå­—æ¯å–å€¼ 1~1000
 			table.insert(word,w);
 		end
 		table.insert(test_words,word);
 	end
 
-	print("×¼±¸·´ĞòÁĞ»¯")
+	print("å‡†å¤‡ååºåˆ—åŒ–")
 	local content = readfile('dat.bin')
 	local dat = unserialize(content);
-	print('·´ĞòÁĞ»¯½áÊø:',os.clock())
+	print('ååºåˆ—åŒ–ç»“æŸ:',os.clock())
 	
 	
 	for kkk=1,100 do
 		for k,v in pairs(test_words) do
 			local find = dat_search(dat,v);
 			if not find then
-				print('Õâ¸öÃ»ÕÒµ½:',table.concat(v,',') );
+				print('è¿™ä¸ªæ²¡æ‰¾åˆ°:',table.concat(v,',') );
 				dat_dump(dat)
 			end
 		end
 	end
 	
-	print('1000´Ê²éÕÒ½áÊø:',os.clock())
+	print('1000è¯æŸ¥æ‰¾ç»“æŸ:',os.clock())
  
 	dat_dump(dat)
 end
  
+test_dat_utf8();
 --test_dat2();
-test_serilize()
+--test_serilize()
 
  

@@ -4,4 +4,5 @@
     <LuaFile RelativePath=".\double_array_trie.lua" />
     <LuaFile RelativePath=".\class.lua" />
     <LuaFile RelativePath=".\serialization.lua" />
+    <LuaFile RelativePath=".\utf8.lua" />
 </Project>
