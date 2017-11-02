@@ -417,6 +417,30 @@ function dat_get_words(dat,idx)
 	return words;
 end
 
+function dat_get_words_utf8(dat,idx)
+	local words = '';
+	while(true) do 
+		local parent_idx = get_value(dat.check[idx]);
+		if parent_idx <= 0 then --无效
+			return '' -- '无效位置'..idx
+		end
+		
+		local word = '';
+		--自己是头结点，所在位置就是编码
+		if get_value(dat.check[idx]) == idx then
+			word = parent_idx;
+		else--子节点，用子节点位置，减去父节点的base值
+			word = idx - get_value(dat.base[parent_idx]);
+		end 
+		words =  string.char(word-1).. words;
+		if get_value(dat.check[idx]) == idx then
+			break;
+		end
+		idx = parent_idx;
+	end
+	return words;
+end
+
 function dat_dump_all_words(dat)
 	local all_words = '';
 	for i=dat.size-1,0,-1 do 
@@ -428,7 +452,21 @@ function dat_dump_all_words(dat)
 			end
 		end
 	end
-	print(all_words)
+	print('所有字符串:',all_words)
+end
+
+function dat_dump_all_words_utf8(dat)
+	local all_words = '';
+	for i=dat.size-1,0,-1 do 
+		local chindren = dat_get_children(dat,i);
+		if #chindren == 0 then--没有子节点的才算
+			local str = dat_get_words_utf8(dat,i);
+			if str:len()>0 then
+				all_words = all_words .. '\n' .. str;
+			end
+		end
+	end
+	print('所有字符串:',all_words)
 end
 
 function dat_search(dat,words)
@@ -462,7 +500,7 @@ end
 
 function dat_insert_utf8string(dat,words)
 	local parent_index = nil;
-	local word_index = string.byte(words,1);
+	local word_index = string.byte(words,1) + 1;
 	while word_index > dat.size do
 		dat_realloc(dat)
 	end
@@ -604,29 +642,31 @@ function dat_search_utf8string(dat,words)
 end
 
 function test_dat_utf8()
-	local dat = dat_create(50);
+	local dat = dat_create(5);
 	local test_words = {
 			'中国',
 			'中国人民',
-			'中间',
-			'人民',
-			'hello',
-			'helloworld',
+			'hi',
+			'hill',
+			'hill church',
 		};
 	--依次插入所有词
 	for k,v in pairs(test_words) do
 		dat_insert_utf8string(dat,v)
 	end
 	
-	for k,v in pairs(test_words) do
-		local find = dat_search_utf8string(dat,v);
-		if not find then
-			print('这个没找到:',v );
-			--dat_dump(dat)
+	print('查找开始:',os.clock())
+	for i=1,1000 do 
+		for k,v in pairs(test_words) do
+			local find = dat_search_utf8string(dat,v);
+			if not find then
+				print('这个没找到:',v );
+				--dat_dump(dat)
+			end
 		end
 	end
-	
-	print('1000词查找结束:',os.clock())
+	--dat_dump_all_words_utf8(dat)
+	print('查找结束:',os.clock())
  
 	dat_dump(dat)
 end
