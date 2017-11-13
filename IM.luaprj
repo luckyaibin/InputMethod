@@ -5,4 +5,5 @@
     <LuaFile RelativePath=".\class.lua" />
     <LuaFile RelativePath=".\serialization.lua" />
     <LuaFile RelativePath=".\utf8.lua" />
+    <LuaFile RelativePath=".\split.lua" />
 </Project>

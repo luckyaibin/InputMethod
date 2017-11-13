@@ -785,7 +785,7 @@ function test_serilize()
 	dat_dump(dat)
 end
  
-test_dat_utf8();
+--test_dat_utf8();
 --test_dat2();
 --test_serilize()
 
