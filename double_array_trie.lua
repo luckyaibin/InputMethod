@@ -10,43 +10,43 @@ local AlphabetCount= AlphabetMax - AlphabetMin + 1;
 function new_node(value,prop)
 	prop = prop or 0;
 	value = value or 0;
-	return {value = value,prop = prop};
+	return {value,prop};
 end
 
 function copy_node(node,node_from)
-	node.value = node_from.value;
-	node.prop = node_from.prop;
+	node[1] = node_from[1];--value
+	node[2] = node_from[2];--prop
 end
 
 
 function set_value(node,value)
-	node.value = value;
+	node[1] = value;
 end
 
 function set_prop(node,prop)
-	node.prop = prop;
+	node[2] = prop;
 end
 
 --获得值
 function get_value(node)
-	return node.value;
+	return node[1];
 end
 
 
 --获得属性
 function get_prop(node)
-	return node.prop;
+	return node[2];
 end
 
 
 
 --初始化dat结构
-function dat_create()
+function dat_create(init_size)
 	local dat = {};
 	dat.base = {};
 	dat.check = {};
 	--空闲队列开始，每次都从它开始遍历,base[0]不使用，base[0]保存的是freelist的起始idx
-	local init_size = 10--AlphabetCount * 2;
+	init_size = init_size or 10--AlphabetCount * 2;
 	local base = dat.base;
 	local check = dat.check;
 	for i=0,init_size do --0 1 2 。。。init_size
@@ -82,7 +82,7 @@ function dat_realloc(dat,factor)
 	local curr_size = dat.size;
 	factor = factor or 1.2;
 	local new_size = math.ceil(curr_size*factor);
-	local new_size = curr_size + AlphabetMax - 1;
+	--local new_size = curr_size + AlphabetMax - 1;
 	local new_dat = {};
 	new_dat.base = {};
 	new_dat.check = {};
