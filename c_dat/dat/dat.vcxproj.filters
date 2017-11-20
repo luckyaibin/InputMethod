@@ -18,5 +18,8 @@
     <ClCompile Include="double_array_trie.c">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="double_array_trie.cxx">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
