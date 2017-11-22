@@ -1,4 +1,3 @@
-
 #include<stdlib.h>
 #include<stdio.h>
 #include<memory.h>
@@ -36,7 +35,7 @@ dat_uint32 AlphabetMax = 256;
 
 #define set_value(to_addr_of_v,from_v) (*to_addr_of_v = ( ( (*to_addr_of_v)&(~DATA_BIT_MASK)) | (from_v & DATA_BIT_MASK) ) )
 #define set_prop(to_addr_of_v,from_v)  (*to_addr_of_v = ( ( (*to_addr_of_v)&(~EXT_BIT_MASK)) | ( (from_v & (EXT_BIT_MASK>>DATA_BIT_NUM) )<<DATA_BIT_NUM) ) )
-typedef struct dat_base_tag 
+typedef struct dat_base_tag
 {
 	dat_uint32 flag : 1;
 	dat_uint32 base : 31;
@@ -62,18 +61,18 @@ dat_t * dat_create(dat_int32 size)
 	dat_t * d = (dat_t*)malloc(sizeof(dat_t));
 	d->count = 0;
 	d->size = size;
-	d->base =  (dat_int32*)malloc(sizeof(dat_int32) * init_size);
-	d->check = (dat_int32*)malloc(sizeof(dat_int32) * init_size);
-	
+	d->base = (dat_int32*)malloc(sizeof(dat_int32)* init_size);
+	d->check = (dat_int32*)malloc(sizeof(dat_int32)* init_size);
+
 	//空闲队列开始，每次都从它开始遍历, base[0]不使用，base[0]保存的是freelist的起始idx
 	for (dat_int32 i = 0; i < init_size; i++)
 	{
-		if (i==0)
+		if (i == 0)
 		{
 			d->base[i] = -1;
 			d->check[i] = -init_size;
 		}
-		else if (i==init_size-1)
+		else if (i == init_size - 1)
 		{
 			d->base[i] = 0;
 			d->check[i] = -(i - 1);
@@ -93,23 +92,23 @@ dat_t * dat_realloc(dat_t *dat, float factor)
 	dat_int32 curr_size = dat->size;
 	dat_int32 new_size = curr_size * factor;
 
-	dat_int32 *base = (dat_int32*)malloc(sizeof(dat_int32) * (new_size+1));
-	dat_int32 *check = (dat_int32*)malloc(sizeof(dat_int32) * (new_size+1));
+	dat_int32 *base = (dat_int32*)malloc(sizeof(dat_int32)* (new_size + 1));
+	dat_int32 *check = (dat_int32*)malloc(sizeof(dat_int32)* (new_size + 1));
 
 	//原样拷贝
-	memmove(base, dat->base, sizeof(dat_int32) * (dat->size+1));
-	memmove(check, dat->check, sizeof(dat_int32) * (dat->size+1));
+	memmove(base, dat->base, sizeof(dat_int32)* (dat->size + 1));
+	memmove(check, dat->check, sizeof(dat_int32)* (dat->size + 1));
 
 	dat_int32 old_last_empty = -dat->check[0];
 	base[old_last_empty] = -(dat->size + 1);//--最后一个空闲的下一个指向新分配的第一个
-	for (dat_int32 i = dat->size + 1;i<= new_size; i++)
+	for (dat_int32 i = dat->size + 1; i <= new_size; i++)
 	{
-		if (i==dat->size+1)
+		if (i == dat->size + 1)
 		{
 			base[i] = -(i + 1);			//下一个不变
 			check[i] = -old_last_empty;	//--第一个空闲的前一个指向最后一个空闲
 		}
-		else if (i==new_size)
+		else if (i == new_size)
 		{
 			base[i] = 0;		//最后一个空闲的下一个指向0
 			check[i] = -(i - 1);//--前一个
@@ -153,11 +152,11 @@ void dat_mark_use(dat_t *dat, dat_int32 i)
 
 /*释放第i个格子（让它和前后空闲格子连接起来)。
 ！！！要在使用后标记
-	i:		0		1		2		3		4
-	b :		-1		- 2		- 3		- 4		0
-	c :		-4		- 0		- 1		- 2		- 3
+i:		0		1		2		3		4
+b :		-1		- 2		- 3		- 4		0
+c :		-4		- 0		- 1		- 2		- 3
 */
-void dat_mark_unuse0(dat_t *dat,dat_int32 i)
+void dat_mark_unuse0(dat_t *dat, dat_int32 i)
 {
 	dat_int32 pre_free = i;
 	while (pre_free > 0 && dat->check[pre_free] > 0)
@@ -193,10 +192,10 @@ void dat_mark_unuse(dat_t *dat, dat_int32 i)
 
 string tostring(int num)
 {
-	 std::stringstream ss;
-	 ss << num;
-	 string s1 = ss.str();
-	 return s1;
+	std::stringstream ss;
+	ss << num;
+	string s1 = ss.str();
+	return s1;
 }
 
 void dat_dump(dat_t *dat)
@@ -206,7 +205,7 @@ void dat_dump(dat_t *dat)
 	string check = "check:\t";
 	string value = "value:\t";
 
-	for (dat_int32 i = 0;i<dat->size+1; i++)
+	for (dat_int32 i = 0; i<dat->size + 1; i++)
 	{
 		index = index + ",\t" + tostring(i);
 		dat_int32 base_v = dat->base[i];
@@ -223,7 +222,7 @@ void dat_dump(dat_t *dat)
 				value = value + ",\t" + tostring(i);
 			}
 			else{
-				value = value + ",\t" + tostring(i - dat->base[check_v]);
+				value = value + ",\t" + tostring(i - get_value(dat->base[check_v]));
 			}
 		}
 		else{
@@ -238,14 +237,14 @@ void dat_dump(dat_t *dat)
 		+ value + "\n\n";
 }
 
-static dat_int32 children_cache[257]  = { 0 };
+static dat_int32 children_cache[257] = { 0 };
 //获得某个状态s的所有子节点
 dat_int32 * dat_get_children(dat_t * dat, dat_int32 s)
 {
 	dat_int32 child_num = 0;
 	memset(children_cache, 0, sizeof(children_cache));
 	dat_int32 base_of_s = get_value(dat->base[s]);
-	for (dat_int32 child_index = base_of_s + AlphabetMin;child_index<= base_of_s + AlphabetMax; child_index++)
+	for (dat_int32 child_index = base_of_s + AlphabetMin; child_index <= base_of_s + AlphabetMax; child_index++)
 	{
 		if (child_index > 0 && child_index <= dat->size)
 		{
@@ -270,12 +269,12 @@ int word_id_list_sort(const void* a, const void *b)
 dat_int32 dat_search_for(dat_t* dat, dat_int32 parent_index, dat_int32* word_id_list, dat_int32 skip_index)
 {
 	dat_int32 word_id_list_size = word_id_list[0];
-	qsort(word_id_list+1, word_id_list_size, sizeof(dat_int32), word_id_list_sort);
-	
+	qsort(word_id_list + 1, word_id_list_size, sizeof(dat_int32), word_id_list_sort);
+
 	dat_int32 free_curr = -dat->base[0];//空闲列表起始索引
-	if(free_curr == 0)//无空闲，重新分配内存
-		dat_realloc(dat,1.5f);
-	
+	if (free_curr == 0)//无空闲，重新分配内存
+		dat_realloc(dat, 1.5f);
+
 	dat_int32 free_curr_try = -dat->base[0];
 	while (true){
 		dat_int32 i = 1;
@@ -283,25 +282,25 @@ dat_int32 dat_search_for(dat_t* dat, dat_int32 parent_index, dat_int32* word_id_
 		while (i <= len)
 		{
 			dat_int32 word_pos = free_curr_try + word_id_list[i] - word_id_list[1];
-			while(word_pos > dat->size - 1)//;超过了dat的范围，重新分配内存
-				dat_realloc(dat,1.5f);
-			if(skip_index > 0 && word_pos == skip_index)
+			while (word_pos > dat->size - 1)//;超过了dat的范围，重新分配内存
+				dat_realloc(dat, 1.5f);
+			if (skip_index > 0 && word_pos == skip_index)
 				break;
-			else if(dat->check[word_pos] <= 0)//空闲
+			else if (dat->check[word_pos] <= 0)//空闲
 				i = i + 1;
-			else if(dat->check[word_pos] == parent_index)//某个其他子节点cj。可以被某个ci覆盖，可以使用
+			else if (dat->check[word_pos] == parent_index)//某个其他子节点cj。可以被某个ci覆盖，可以使用
 				i = i + 1;
 			else//不空闲，不满足
 				break;
-			
+
 		}
 		if (i == len + 1)//成功
 			return free_curr_try;
 		else
 			free_curr_try = -dat->base[free_curr_try];
-	
+
 		if (free_curr_try == 0)//遍历到最后一个空闲的还没找到，重新分配内存
-			dat_realloc(dat,1.5f);
+			dat_realloc(dat, 1.5f);
 	}
 }
 
@@ -310,12 +309,12 @@ dat_int32 dat_search_for(dat_t* dat, dat_int32 parent_index, dat_int32* word_id_
 //移动 parent_index 的某个子节点ci ，除修改parent_index的base值，ci的子节点d1,d2..di等的check也要修改
 //移动 parent_index 的所有的转移状态 children_index_list ，到 base_index 开始的索引
 //watch_index ，监测这个值移动到了哪个新位置。函数最后返回这个新位置
-dat_int32 dat_relocate(dat_t* dat,dat_int32 parent_index,dat_int32* children_index_list,dat_int32 base_index,dat_int32 watch_index)
+dat_int32 dat_relocate(dat_t* dat, dat_int32 parent_index, dat_int32* children_index_list, dat_int32 base_index, dat_int32 watch_index)
 {	// s:state,b:base_index;
 	dat_int32 diff = base_index - children_index_list[1];
 	//diff 大于0，整体都向右移动了。需要从右向左开始遍历移动子节点,因为兄弟节点间是会覆盖的，需要注意方向。
 	//diff 小于0，整体都向左移动了。相反
-	dat_int32 from,to,step;
+	dat_int32 from, to, step;
 	if (diff > 0){
 		from = children_index_list[0];
 		to = 1;
@@ -326,36 +325,38 @@ dat_int32 dat_relocate(dat_t* dat,dat_int32 parent_index,dat_int32* children_ind
 		to = children_index_list[0];
 		step = 1;
 	}
-	
-	for (dat_int32 i = from; !(i == to); i = i + step){
+
+	for (dat_int32 i = from; ; i = i + step){
 		dat_int32 child_index = children_index_list[i];
 		dat_int32 child_new_index = child_index + diff;
 		if (watch_index == child_index)
 			watch_index = child_new_index;
-		dat_mark_use(dat,child_new_index);
+		dat_mark_use(dat, child_new_index);
 		//1. 可能某个child是将要加入到 parent_index 的子节点， 那么child_index可能是<=0的，也可能超过dat大小
 		//2. 对于某个子节点，计算出来的下标和父节点重复在一起是不可能的，那么这个子节点一定是新的子节点，还没
 		//来得及加入到dat里，所以需要限制条件: check[child] ~= parent_index.
 		if (child_index > 0 && (dat->check[child_index] == parent_index) && (child_index != parent_index)){
 			dat->base[child_new_index] = dat->base[child_index];//拷贝数据
 			dat->check[child_new_index] = dat->check[child_index];//拷贝数据
-			
+
 			dat_int32 child_base = get_value(dat->base[child_index]);
 			for (dat_int32 j = child_base + AlphabetMin; i <= child_base + AlphabetMax; j++)//某个子节点移动到新位置，还要修改子节点的子节点的check，指向新的位置
 			{
-				if (j > 0 && j<=dat->size && dat->check[j] == child_index && dat->check[j] != j)
+				if (j > 0 && j <= dat->size && dat->check[j] == child_index && dat->check[j] != j)
 					dat->check[j] = child_new_index;
 			}
-			dat_mark_unuse (dat,child_index);//释放
-			}
+			dat_mark_unuse(dat, child_index);//释放
+		}
 		else{//child_index 将要成为s的子节点
 			//新节点
 			dat->base[child_new_index] = 0;
 			dat->check[child_new_index] = parent_index;
 		}
+		if (i == to)//终止
+			break;
 	}
 	//修改父节s点的base值 :dat.base[parent_index] = dat.base[parent_index] + diff;
-	dat_int32 parent_new_base_value = get_value(dat->base[parent_index]) + diff;
+	dat_int32 parent_new_base_value = get_value(dat->base[parent_index]) + diff;//这里新的父节点的base值parent_new_base_value变成了是负数，设置回去就出错了
 	dat_int32 parent_new_base_prop = get_prop(dat->base[parent_index]);
 
 	dat->base[parent_index] = 0;
@@ -367,7 +368,7 @@ dat_int32 dat_relocate(dat_t* dat,dat_int32 parent_index,dat_int32* children_ind
 //想要把 word 插入，作为 curr_word_parent_index 的子节点，但是 curr_word_index 这个位置被占用了。
 //这时候移动curr_word_parent_index的所有子节点，让出 conflict_index 这个位置。
 //最后返回word被插入或挪动到的位置
-dat_int32 dat_solve_conflict(dat_t* dat,dat_int32 conflict_index,dat_int32 curr_word_parent_index,dat_int32 word){
+dat_int32 dat_solve_conflict(dat_t* dat, dat_int32 conflict_index, dat_int32 curr_word_parent_index, dat_int32 word){
 	dat_int32 word_final_index;
 	dat_int32* children_index_list = dat_get_children(dat, curr_word_parent_index);
 	dat_int32 curr_word_index = get_value(dat->base[curr_word_parent_index]) + word;
@@ -388,8 +389,8 @@ void dat_insert(dat_t* dat, dat_int32 words[]){
 	dat_int32 parent_index = 0;
 	dat_int32 word_index = words[1];
 	dat_int32 word = words[1];
-	while(word_index > dat->size)
-		dat_realloc(dat,1.5f);
+	while (word_index > dat->size)
+		dat_realloc(dat, 1.5f);
 
 	if (dat->check[word_index] <= 0)//空闲，直接插入
 	{
@@ -406,11 +407,11 @@ void dat_insert(dat_t* dat, dat_int32 words[]){
 	{
 		dat_int32 curr_hold_parent = dat->check[word_index];
 		dat_int32* children_index_list = dat_get_children(dat, curr_hold_parent);
-		dat_int32 first_ok_index = dat_search_for(dat,curr_hold_parent,children_index_list,word_index);//让出头结点位置
+		dat_int32 first_ok_index = dat_search_for(dat, curr_hold_parent, children_index_list, word_index);//让出头结点位置
 		dat_int32 moved_to = dat_relocate(dat, curr_hold_parent, children_index_list, first_ok_index, word_index);
-		
-		dat_mark_use(dat,word_index);
-		dat->base[word_index]=0;
+
+		dat_mark_use(dat, word_index);
+		dat->base[word_index] = 0;
 		dat->check[word_index] = word_index;//--头结点的父节点指向自己
 		parent_index = word_index;
 		dat->count = dat->count + 1;
@@ -419,11 +420,11 @@ void dat_insert(dat_t* dat, dat_int32 words[]){
 		dat_int32 word = words[i];
 		dat_int32 word_index = get_value(dat->base[parent_index]) + word;
 		while (word_index > dat->size)
-			dat_realloc(dat,1.5f);
+			dat_realloc(dat, 1.5f);
 		if (word_index > 0 && dat->check[word_index] <= 0)//空闲，直接插入
 		{
 			dat_mark_use(dat, word_index);
-			dat->base[word_index]= 0;
+			dat->base[word_index] = 0;
 			dat->check[word_index] = parent_index;
 			parent_index = word_index;
 			dat->count = dat->count + 1;
@@ -441,29 +442,29 @@ void dat_insert(dat_t* dat, dat_int32 words[]){
 
 		dat_dump(dat);
 	}
-	
-	set_prop(&dat->base[parent_index],WordEndFlag);
+
+	//set_prop(&dat->base[parent_index], WordEndFlag);
 }
 
 
-bool dat_search(dat_t* dat,dat_int32* words){
+bool dat_search_check_prop(dat_t* dat, dat_int32* words){
 	dat_int32 parent_idx = words[1];
-	if (parent_idx <=0 || parent_idx> dat->size)
+	if (parent_idx <= 0 || parent_idx> dat->size)
 	{
 		return false;
 	}
-	if(words[0] == 1
+	if (words[0] == 1
 		&& dat->check[parent_idx] == parent_idx
 		&& get_prop(dat->base[parent_idx]) == WordEndFlag)
 	{
 		return true;
 	}
-	
-	for (dat_int32 i=2;i<=words[0];i++){
+
+	for (dat_int32 i = 2; i <= words[0]; i++){
 		dat_int32 word = words[i];
-		if (get_value(dat->base[parent_idx]) + word <=0 || get_value(dat->base[parent_idx]) + word > dat->size)
+		if (get_value(dat->base[parent_idx]) + word <= 0 || get_value(dat->base[parent_idx]) + word > dat->size)
 			return false;
-		if (dat->check [ get_value(dat->base[parent_idx]) + word ]  == parent_idx )
+		if (dat->check[get_value(dat->base[parent_idx]) + word] == parent_idx)
 			parent_idx = get_value(dat->base[parent_idx]) + word;
 		else
 			return false;
@@ -475,22 +476,46 @@ bool dat_search(dat_t* dat,dat_int32* words){
 
 }
 
+bool dat_search(dat_t* dat, dat_int32* words){
+	dat_int32 parent_idx = words[1];
+	if (parent_idx <= 0 || parent_idx > dat->size)
+	{
+		return false;
+	}
+	if (words[0] == 1
+		&& dat->check[parent_idx] == parent_idx)
+	{
+		return true;
+	}
+
+	for (dat_int32 i = 2; i <= words[0]; i++){
+		dat_int32 word = words[i];
+		if (get_value(dat->base[parent_idx]) + word <= 0 || get_value(dat->base[parent_idx]) + word > dat->size)
+			return false;
+		if (dat->check[get_value(dat->base[parent_idx]) + word] == parent_idx)
+			parent_idx = get_value(dat->base[parent_idx]) + word;
+		else
+			return false;
+	}
+	return true;
+}
+
 //根据某个索引，获得这个索引的字符串
-std::string dat_get_words(dat_t *dat,dat_int32 idx){
+std::string dat_get_words(dat_t *dat, dat_int32 idx){
 	std::string words = "";
-	while(true) {
+	while (true) {
 		dat_int32 parent_idx = dat->check[idx];
 		if (parent_idx <= 0)//无效
 			return "";// '无效位置'..idx
-		
+
 		dat_int32 word = 0;
 		//自己是头结点，所在位置就是编码
 		if (dat->check[idx] == idx)
 			word = parent_idx;
 		else// 子节点，用子节点位置，减去父节点的base值
 			word = idx - get_value(dat->base[parent_idx]);
-	
-		words =  tostring(word) + "," + words;
+
+		words = tostring(word) + "," + words;
 		if (dat->check[idx] == idx)
 			break;
 		idx = parent_idx;
@@ -500,10 +525,10 @@ std::string dat_get_words(dat_t *dat,dat_int32 idx){
 
 void dat_dump_all_words(dat_t * dat){
 	std::string all_words = "";
-	for (dat_int32 i=dat->size-1;i>=0;i=i-1){
-		dat_int32* chindren = dat_get_children(dat,i);
+	for (dat_int32 i = dat->size - 1; i >= 0; i = i - 1){
+		dat_int32* chindren = dat_get_children(dat, i);
 		if (chindren[0] == 0){ //没有子节点的才算
-			std::string str = dat_get_words(dat,i);
+			std::string str = dat_get_words(dat, i);
 			if (str.length() > 0) {
 				all_words = all_words + "\n" + str;
 			}
@@ -518,11 +543,11 @@ int main()
 	dat_t* dat = dat_create(10);
 	dat_dump(dat);
 
-	dat_int32 word1[2] = {1, 10 };
-	dat_int32 word2[3] = {2, 10,20 };
-	dat_int32 word3[4] = {3, 10,20,30 };
-	dat_int32 word4[5] = {4, 40,50,30,20 };
-	dat_int32 word5[6] = {5, 50,40,30,20,10 };
+	dat_int32 word1[2] = { 1, 10 };
+	dat_int32 word2[3] = { 2, 10, 20 };
+	dat_int32 word3[4] = { 3, 10, 20, 30 };
+	dat_int32 word4[5] = { 4, 40, 50, 30, 20 };
+	dat_int32 word5[6] = { 5, 50, 40, 30, 20, 10 };
 
 	dat_insert(dat, word1);
 	is_find = dat_search(dat, word1);
@@ -541,7 +566,7 @@ int main()
 	is_find = dat_search(dat, word3);
 	dat_dump_all_words(dat);
 	dat_dump(dat);
-		
+
 	dat_insert(dat, word4);
 	is_find = dat_search(dat, word1);
 	is_find = dat_search(dat, word2);
@@ -558,6 +583,6 @@ int main()
 	is_find = dat_search(dat, word5);
 	dat_dump_all_words(dat);
 	dat_dump(dat);
- 
+
 	return 0;
 }
