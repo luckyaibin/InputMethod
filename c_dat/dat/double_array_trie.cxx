@@ -16,13 +16,13 @@ typedef short dat_int16;
 typedef int dat_int32;
 
 
-dat_uint8 WordEndFlag = 1;
-dat_uint8 AlphabetMin = 1;
-dat_uint8 AlphabetMax = 256;
+dat_uint32 WordEndFlag = 1;
+dat_uint32 AlphabetMin = 1;
+dat_uint32 AlphabetMax = 256;
 
-//Êı¾İÕ¼ÓÃbitÊıÁ¿
+//æ•°æ®å ç”¨bitæ•°é‡
 #define DATA_BIT_NUM	9
-//¶îÍâĞÅÏ¢Õ¼ÓÃbitÊıÁ¿
+//é¢å¤–ä¿¡æ¯å ç”¨bitæ•°é‡
 #define EXT_BIT_NUM		7
 
 // 0000 0000,0000 0000,0000 0001,1111 1111
@@ -50,6 +50,9 @@ typedef struct dat_tag {
 	dat_int32 *check;
 }dat_t;
 
+
+void dat_dump(dat_t *dat);
+
 #define new_node(v) 
 
 dat_t * dat_create(dat_int32 size)
@@ -58,11 +61,11 @@ dat_t * dat_create(dat_int32 size)
 	dat_int32 init_size = size + 1;
 	dat_t * d = (dat_t*)malloc(sizeof(dat_t));
 	d->count = 0;
-	d->size = init_size;
+	d->size = size;
 	d->base =  (dat_int32*)malloc(sizeof(dat_int32) * init_size);
 	d->check = (dat_int32*)malloc(sizeof(dat_int32) * init_size);
 	
-	//¿ÕÏĞ¶ÓÁĞ¿ªÊ¼£¬Ã¿´Î¶¼´ÓËü¿ªÊ¼±éÀú, base[0]²»Ê¹ÓÃ£¬base[0]±£´æµÄÊÇfreelistµÄÆğÊ¼idx
+	//ç©ºé—²é˜Ÿåˆ—å¼€å§‹ï¼Œæ¯æ¬¡éƒ½ä»å®ƒå¼€å§‹éå†, base[0]ä¸ä½¿ç”¨ï¼Œbase[0]ä¿å­˜çš„æ˜¯freelistçš„èµ·å§‹idx
 	for (dat_int32 i = 0; i < init_size; i++)
 	{
 		if (i==0)
@@ -80,34 +83,36 @@ dat_t * dat_create(dat_int32 size)
 			d->check[i] = -(i - 1);
 		}
 	}
+	return d;
 }
 
 
 dat_t * dat_realloc(dat_t *dat, float factor)
 {
+	//dat_dump(dat);
 	dat_int32 curr_size = dat->size;
 	dat_int32 new_size = curr_size * factor;
 
-	dat_int32 *base = (dat_int32*)malloc(sizeof(dat_int32) * new_size);
-	dat_int32 *check = (dat_int32*)malloc(sizeof(dat_int32) * new_size);
+	dat_int32 *base = (dat_int32*)malloc(sizeof(dat_int32) * (new_size+1));
+	dat_int32 *check = (dat_int32*)malloc(sizeof(dat_int32) * (new_size+1));
 
-	//Ô­Ñù¿½±´
-	memmove(base, dat->base, sizeof(dat_int32) * dat->size);
-	memmove(check, dat->check, sizeof(dat_int32) * dat->size);
+	//åŸæ ·æ‹·è´
+	memmove(base, dat->base, sizeof(dat_int32) * (dat->size+1));
+	memmove(check, dat->check, sizeof(dat_int32) * (dat->size+1));
 
 	dat_int32 old_last_empty = -dat->check[0];
-	base[old_last_empty] = -(dat->size + 1);//--×îºóÒ»¸ö¿ÕÏĞµÄÏÂÒ»¸öÖ¸ÏòĞÂ·ÖÅäµÄµÚÒ»¸ö
-	for (dat_int32 i = dat->size + 1; new_size; i++)
+	base[old_last_empty] = -(dat->size + 1);//--æœ€åä¸€ä¸ªç©ºé—²çš„ä¸‹ä¸€ä¸ªæŒ‡å‘æ–°åˆ†é…çš„ç¬¬ä¸€ä¸ª
+	for (dat_int32 i = dat->size + 1;i<= new_size; i++)
 	{
 		if (i==dat->size+1)
 		{
-			base[i] = -(i + 1);			//ÏÂÒ»¸ö²»±ä
-			check[i] = -old_last_empty;	//--µÚÒ»¸ö¿ÕÏĞµÄÇ°Ò»¸öÖ¸Ïò×îºóÒ»¸ö¿ÕÏĞ
+			base[i] = -(i + 1);			//ä¸‹ä¸€ä¸ªä¸å˜
+			check[i] = -old_last_empty;	//--ç¬¬ä¸€ä¸ªç©ºé—²çš„å‰ä¸€ä¸ªæŒ‡å‘æœ€åä¸€ä¸ªç©ºé—²
 		}
 		else if (i==new_size)
 		{
-			base[i] = 0;		//×îºóÒ»¸ö¿ÕÏĞµÄÏÂÒ»¸öÖ¸Ïò0
-			check[i] = -(i - 1);//--Ç°Ò»¸ö
+			base[i] = 0;		//æœ€åä¸€ä¸ªç©ºé—²çš„ä¸‹ä¸€ä¸ªæŒ‡å‘0
+			check[i] = -(i - 1);//--å‰ä¸€ä¸ª
 		}
 		else
 		{
@@ -116,7 +121,7 @@ dat_t * dat_realloc(dat_t *dat, float factor)
 		}
 	}
 
-	//Èç¹ûÖ®Ç°´ÓÀ´Ã»ÓĞ¿ÕÏĞ£¬ÄÇÃ´
+	//å¦‚æœä¹‹å‰ä»æ¥æ²¡æœ‰ç©ºé—²ï¼Œé‚£ä¹ˆ
 	if (base[0] == 0)
 	{
 		base[0] = -(dat->size + 1);
@@ -128,11 +133,13 @@ dat_t * dat_realloc(dat_t *dat, float factor)
 	dat->base = base;
 	dat->check = check;
 	dat->size = new_size;
+	std::cout << "é‡æ–°åˆ†é…å®Œæˆ:\n";
+	//dat_dump(dat);
 	return dat;
 }
 
-//Ê¹ÓÃµÚi¸ö¸ñ×Ó¡£
-//£¡£¡£¡ÒªÔÚÊ¹ÓÃÇ°±ê¼Ç¡£Èç¹ûÏÈÊ¹ÓÃ£¬ÄÇÃ´ÀïÃæµÄÖµÒÑ¾­±»¸Ä±äÁË£¬ÎŞ·¨ÕÒµ½Ç°ÇıºÍºó¼Ì½ÚµãÁË
+//ä½¿ç”¨ç¬¬iä¸ªæ ¼å­ã€‚
+//ï¼ï¼ï¼è¦åœ¨ä½¿ç”¨å‰æ ‡è®°ã€‚å¦‚æœå…ˆä½¿ç”¨ï¼Œé‚£ä¹ˆé‡Œé¢çš„å€¼å·²ç»è¢«æ”¹å˜äº†ï¼Œæ— æ³•æ‰¾åˆ°å‰é©±å’Œåç»§èŠ‚ç‚¹äº†
 void dat_mark_use(dat_t *dat, dat_int32 i)
 {
 	dat_int32 is_free = dat->check[i] <= 0;
@@ -144,13 +151,13 @@ void dat_mark_use(dat_t *dat, dat_int32 i)
 	dat->check[next] = -pre;
 }
 
-/*ÊÍ·ÅµÚi¸ö¸ñ×Ó£¨ÈÃËüºÍÇ°ºó¿ÕÏĞ¸ñ×ÓÁ¬½ÓÆğÀ´)¡£
-£¡£¡£¡ÒªÔÚÊ¹ÓÃºó±ê¼Ç
+/*é‡Šæ”¾ç¬¬iä¸ªæ ¼å­ï¼ˆè®©å®ƒå’Œå‰åç©ºé—²æ ¼å­è¿æ¥èµ·æ¥)ã€‚
+ï¼ï¼ï¼è¦åœ¨ä½¿ç”¨åæ ‡è®°
 	i:		0		1		2		3		4
 	b :		-1		- 2		- 3		- 4		0
 	c :		-4		- 0		- 1		- 2		- 3
 */
-void dat_mark_unuse(dat_t *dat,dat_int32 i)
+void dat_mark_unuse0(dat_t *dat,dat_int32 i)
 {
 	dat_int32 pre_free = i;
 	while (pre_free > 0 && dat->check[pre_free] > 0)
@@ -199,14 +206,14 @@ void dat_dump(dat_t *dat)
 	string check = "check:\t";
 	string value = "value:\t";
 
-	for (dat_int32 i = 0; dat->size; i++)
+	for (dat_int32 i = 0;i<dat->size+1; i++)
 	{
 		index = index + ",\t" + tostring(i);
 		dat_int32 base_v = dat->base[i];
 		dat_int32 check_v = dat->check[i];
 		base = base + "\t" + tostring(base_v);
 		check = check + "\t" + tostring(check_v);
-		//ÓĞÊı¾İ
+		//æœ‰æ•°æ®
 		if (check_v > 0)
 		{
 			dat_int32 v = get_value(base_v);
@@ -222,93 +229,92 @@ void dat_dump(dat_t *dat)
 		else{
 			value = value + ",\t" + "x";
 		}
-
-		std::cout << "dat size:" + tostring(dat->size) +"\n"
-			+"dat count:" + tostring(dat.count) + "\n"
-			+tostring(index) + "\n"
-			+tostring(base) + "\n"
-			+tostring(check) + "\n"
-			+tostring(value);
 	}
+	std::cout << "dat size:" + tostring(dat->size) + "\n"
+		+ "dat count:" + tostring(dat->count) + "\n"
+		+ index + "\n"
+		+ base + "\n"
+		+ check + "\n"
+		+ value + "\n\n";
 }
 
 static dat_int32 children_cache[257]  = { 0 };
-//»ñµÃÄ³¸ö×´Ì¬sµÄËùÓĞ×Ó½Úµã
+//è·å¾—æŸä¸ªçŠ¶æ€sçš„æ‰€æœ‰å­èŠ‚ç‚¹
 dat_int32 * dat_get_children(dat_t * dat, dat_int32 s)
 {
 	dat_int32 child_num = 0;
 	memset(children_cache, 0, sizeof(children_cache));
-	dat_int32 base_of_s = get_value(dat.base[s]);
-	for (dat_int32 child_index = base_of_s + AlphabetMin;child_index<= base_of_s + AlphabetMax)
+	dat_int32 base_of_s = get_value(dat->base[s]);
+	for (dat_int32 child_index = base_of_s + AlphabetMin;child_index<= base_of_s + AlphabetMax; child_index++)
 	{
 		if (child_index > 0 && child_index <= dat->size)
 		{
-			if (dat->check[child_index] == s && child_index ~= s)
+			if (dat->check[child_index] == s && child_index != s)
 			{
-				children_cache[child_num] = child_index;
-				child_num++;
+				children_cache[++child_num] = child_index;
 			}
 		}
 	}
+	children_cache[0] = child_num;
 	return children_cache;
 }
 
 
 
-int word_id_list_sort(dat_int32 a, dat_int32 b)
+int word_id_list_sort(const void* a, const void *b)
 {
-	return a - b;
+	return *(dat_int32*)a - *(dat_int32*)(b);
 }
 
-//ÕÒ³öparent_indexµÄËùÓĞ×Ó½Úµã¿ÉÒÔÅ²¶¯µÄÎ»ÖÃ
+//æ‰¾å‡ºparent_indexçš„æ‰€æœ‰å­èŠ‚ç‚¹å¯ä»¥æŒªåŠ¨çš„ä½ç½®
 dat_int32 dat_search_for(dat_t* dat, dat_int32 parent_index, dat_int32* word_id_list, dat_int32 skip_index)
 {
 	dat_int32 word_id_list_size = word_id_list[0];
 	qsort(word_id_list+1, word_id_list_size, sizeof(dat_int32), word_id_list_sort);
 	
-	dat_int32 free_curr = -get_value(dat->base[0]);//¿ÕÏĞÁĞ±íÆğÊ¼Ë÷Òı
-	if(free_curr == 0)//ÎŞ¿ÕÏĞ£¬ÖØĞÂ·ÖÅäÄÚ´æ
+	dat_int32 free_curr = -dat->base[0];//ç©ºé—²åˆ—è¡¨èµ·å§‹ç´¢å¼•
+	if(free_curr == 0)//æ— ç©ºé—²ï¼Œé‡æ–°åˆ†é…å†…å­˜
 		dat_realloc(dat,1.5f);
 	
-	dat_int32 free_curr_try = -get_value(dat.base[0]);
+	dat_int32 free_curr_try = -dat->base[0];
 	while (true){
 		dat_int32 i = 1;
 		dat_int32 len = word_id_list_size;
 		while (i <= len)
 		{
 			dat_int32 word_pos = free_curr_try + word_id_list[i] - word_id_list[1];
-			while(word_pos > dat->size - 1)//;³¬¹ıÁËdatµÄ·¶Î§£¬ÖØĞÂ·ÖÅäÄÚ´æ
+			while(word_pos > dat->size - 1)//;è¶…è¿‡äº†datçš„èŒƒå›´ï¼Œé‡æ–°åˆ†é…å†…å­˜
 				dat_realloc(dat,1.5f);
 			if(skip_index > 0 && word_pos == skip_index)
 				break;
-			else if(dat->check[word_pos] <= 0)//¿ÕÏĞ
+			else if(dat->check[word_pos] <= 0)//ç©ºé—²
 				i = i + 1;
-			else if(dat->check[word_pos] == parent_index)//Ä³¸öÆäËû×Ó½Úµãcj¡£¿ÉÒÔ±»Ä³¸öci¸²¸Ç£¬¿ÉÒÔÊ¹ÓÃ
+			else if(dat->check[word_pos] == parent_index)//æŸä¸ªå…¶ä»–å­èŠ‚ç‚¹cjã€‚å¯ä»¥è¢«æŸä¸ªciè¦†ç›–ï¼Œå¯ä»¥ä½¿ç”¨
 				i = i + 1;
-			else//²»¿ÕÏĞ£¬²»Âú×ã
+			else//ä¸ç©ºé—²ï¼Œä¸æ»¡è¶³
 				break;
 			
 		}
-		if (i == len + 1)//³É¹¦
+		if (i == len + 1)//æˆåŠŸ
 			return free_curr_try;
 		else
 			free_curr_try = -dat->base[free_curr_try];
 	
-		if (free_curr_try == 0)//±éÀúµ½×îºóÒ»¸ö¿ÕÏĞµÄ»¹Ã»ÕÒµ½£¬ÖØĞÂ·ÖÅäÄÚ´æ
+		if (free_curr_try == 0)//éå†åˆ°æœ€åä¸€ä¸ªç©ºé—²çš„è¿˜æ²¡æ‰¾åˆ°ï¼Œé‡æ–°åˆ†é…å†…å­˜
 			dat_realloc(dat,1.5f);
 	}
 }
 
 
 
-//ÒÆ¶¯ parent_index µÄÄ³¸ö×Ó½Úµãci £¬³ıĞŞ¸Äparent_indexµÄbaseÖµ£¬ciµÄ×Ó½Úµãd1,d2..diµÈµÄcheckÒ²ÒªĞŞ¸Ä
-//ÒÆ¶¯ parent_index µÄËùÓĞµÄ×ªÒÆ×´Ì¬ children_index_list £¬µ½ base_index ¿ªÊ¼µÄË÷Òı
-//watch_index £¬¼à²âÕâ¸öÖµÒÆ¶¯µ½ÁËÄÄ¸öĞÂÎ»ÖÃ¡£º¯Êı×îºó·µ»ØÕâ¸öĞÂÎ»ÖÃ
+//ç§»åŠ¨ parent_index çš„æŸä¸ªå­èŠ‚ç‚¹ci ï¼Œé™¤ä¿®æ”¹parent_indexçš„baseå€¼ï¼Œciçš„å­èŠ‚ç‚¹d1,d2..diç­‰çš„checkä¹Ÿè¦ä¿®æ”¹
+//ç§»åŠ¨ parent_index çš„æ‰€æœ‰çš„è½¬ç§»çŠ¶æ€ children_index_list ï¼Œåˆ° base_index å¼€å§‹çš„ç´¢å¼•
+//watch_index ï¼Œç›‘æµ‹è¿™ä¸ªå€¼ç§»åŠ¨åˆ°äº†å“ªä¸ªæ–°ä½ç½®ã€‚å‡½æ•°æœ€åè¿”å›è¿™ä¸ªæ–°ä½ç½®
 dat_int32 dat_relocate(dat_t* dat,dat_int32 parent_index,dat_int32* children_index_list,dat_int32 base_index,dat_int32 watch_index)
 {	// s:state,b:base_index;
 	dat_int32 diff = base_index - children_index_list[1];
-	//diff ´óÓÚ0£¬ÕûÌå¶¼ÏòÓÒÒÆ¶¯ÁË¡£ĞèÒª´ÓÓÒÏò×ó¿ªÊ¼±éÀúÒÆ¶¯×Ó½Úµã,ÒòÎªĞÖµÜ½Úµã¼äÊÇ»á¸²¸ÇµÄ£¬ĞèÒª×¢Òâ·½Ïò¡£
-	//diff Ğ¡ÓÚ0£¬ÕûÌå¶¼Ïò×óÒÆ¶¯ÁË¡£Ïà·´
+	//diff å¤§äº0ï¼Œæ•´ä½“éƒ½å‘å³ç§»åŠ¨äº†ã€‚éœ€è¦ä»å³å‘å·¦å¼€å§‹éå†ç§»åŠ¨å­èŠ‚ç‚¹,å› ä¸ºå…„å¼ŸèŠ‚ç‚¹é—´æ˜¯ä¼šè¦†ç›–çš„ï¼Œéœ€è¦æ³¨æ„æ–¹å‘ã€‚
+	//diff å°äº0ï¼Œæ•´ä½“éƒ½å‘å·¦ç§»åŠ¨äº†ã€‚ç›¸å
 	dat_int32 from,to,step;
 	if (diff > 0){
 		from = children_index_list[0];
@@ -321,49 +327,53 @@ dat_int32 dat_relocate(dat_t* dat,dat_int32 parent_index,dat_int32* children_ind
 		step = 1;
 	}
 	
-	for (dat_int32 i = from; i <= to; i = i + step){
+	for (dat_int32 i = from; !(i == to); i = i + step){
 		dat_int32 child_index = children_index_list[i];
 		dat_int32 child_new_index = child_index + diff;
 		if (watch_index == child_index)
 			watch_index = child_new_index;
 		dat_mark_use(dat,child_new_index);
-		//1. ¿ÉÄÜÄ³¸öchildÊÇ½«Òª¼ÓÈëµ½ parent_index µÄ×Ó½Úµã£¬ ÄÇÃ´child_index¿ÉÄÜÊÇ<=0µÄ£¬Ò²¿ÉÄÜ³¬¹ıdat´óĞ¡
-		//2. ¶ÔÓÚÄ³¸ö×Ó½Úµã£¬¼ÆËã³öÀ´µÄÏÂ±êºÍ¸¸½ÚµãÖØ¸´ÔÚÒ»ÆğÊÇ²»¿ÉÄÜµÄ£¬ÄÇÃ´Õâ¸ö×Ó½ÚµãÒ»¶¨ÊÇĞÂµÄ×Ó½Úµã£¬»¹Ã»
-		//À´µÃ¼°¼ÓÈëµ½datÀï£¬ËùÒÔĞèÒªÏŞÖÆÌõ¼ş: check[child] ~= parent_index.
+		//1. å¯èƒ½æŸä¸ªchildæ˜¯å°†è¦åŠ å…¥åˆ° parent_index çš„å­èŠ‚ç‚¹ï¼Œ é‚£ä¹ˆchild_indexå¯èƒ½æ˜¯<=0çš„ï¼Œä¹Ÿå¯èƒ½è¶…è¿‡datå¤§å°
+		//2. å¯¹äºæŸä¸ªå­èŠ‚ç‚¹ï¼Œè®¡ç®—å‡ºæ¥çš„ä¸‹æ ‡å’Œçˆ¶èŠ‚ç‚¹é‡å¤åœ¨ä¸€èµ·æ˜¯ä¸å¯èƒ½çš„ï¼Œé‚£ä¹ˆè¿™ä¸ªå­èŠ‚ç‚¹ä¸€å®šæ˜¯æ–°çš„å­èŠ‚ç‚¹ï¼Œè¿˜æ²¡
+		//æ¥å¾—åŠåŠ å…¥åˆ°daté‡Œï¼Œæ‰€ä»¥éœ€è¦é™åˆ¶æ¡ä»¶: check[child] ~= parent_index.
 		if (child_index > 0 && (dat->check[child_index] == parent_index) && (child_index != parent_index)){
-			dat->base[child_new_index] = dat->base[child_index];//¿½±´Êı¾İ
-			dat->check[child_new_index] = dat->check[child_index];//¿½±´Êı¾İ
+			dat->base[child_new_index] = dat->base[child_index];//æ‹·è´æ•°æ®
+			dat->check[child_new_index] = dat->check[child_index];//æ‹·è´æ•°æ®
 			
 			dat_int32 child_base = get_value(dat->base[child_index]);
-			for (dat_int32 j = child_base + AlphabetMin; i <= child_base + AlphabetMax; j++)//Ä³¸ö×Ó½ÚµãÒÆ¶¯µ½ĞÂÎ»ÖÃ£¬»¹ÒªĞŞ¸Ä×Ó½ÚµãµÄ×Ó½ÚµãµÄcheck£¬Ö¸ÏòĞÂµÄÎ»ÖÃ
+			for (dat_int32 j = child_base + AlphabetMin; i <= child_base + AlphabetMax; j++)//æŸä¸ªå­èŠ‚ç‚¹ç§»åŠ¨åˆ°æ–°ä½ç½®ï¼Œè¿˜è¦ä¿®æ”¹å­èŠ‚ç‚¹çš„å­èŠ‚ç‚¹çš„checkï¼ŒæŒ‡å‘æ–°çš„ä½ç½®
 			{
 				if (j > 0 && j<=dat->size && dat->check[j] == child_index && dat->check[j] != j)
 					dat->check[j] = child_new_index;
 			}
-			dat_mark_unuse (dat,child_index);//ÊÍ·Å
+			dat_mark_unuse (dat,child_index);//é‡Šæ”¾
 			}
-		else{//child_index ½«Òª³ÉÎªsµÄ×Ó½Úµã
-			//ĞÂ½Úµã
+		else{//child_index å°†è¦æˆä¸ºsçš„å­èŠ‚ç‚¹
+			//æ–°èŠ‚ç‚¹
 			dat->base[child_new_index] = 0;
 			dat->check[child_new_index] = parent_index;
 		}
 	}
-	//ĞŞ¸Ä¸¸½ÚsµãµÄbaseÖµ :dat.base[parent_index] = dat.base[parent_index] + diff;
+	//ä¿®æ”¹çˆ¶èŠ‚sç‚¹çš„baseå€¼ :dat.base[parent_index] = dat.base[parent_index] + diff;
 	dat_int32 parent_new_base_value = get_value(dat->base[parent_index]) + diff;
+	dat_int32 parent_new_base_prop = get_prop(dat->base[parent_index]);
+
+	dat->base[parent_index] = 0;
 	set_value(&dat->base[parent_index], parent_new_base_value);
+	set_prop(&dat->base[parent_index], parent_new_base_prop);
 	return watch_index;
 }
 
-//ÏëÒª°Ñ word ²åÈë£¬×÷Îª curr_word_parent_index µÄ×Ó½Úµã£¬µ«ÊÇ curr_word_index Õâ¸öÎ»ÖÃ±»Õ¼ÓÃÁË¡£
-//ÕâÊ±ºòÒÆ¶¯curr_word_parent_indexµÄËùÓĞ×Ó½Úµã£¬ÈÃ³ö conflict_index Õâ¸öÎ»ÖÃ¡£
-//×îºó·µ»Øword±»²åÈë»òÅ²¶¯µ½µÄÎ»ÖÃ
+//æƒ³è¦æŠŠ word æ’å…¥ï¼Œä½œä¸º curr_word_parent_index çš„å­èŠ‚ç‚¹ï¼Œä½†æ˜¯ curr_word_index è¿™ä¸ªä½ç½®è¢«å ç”¨äº†ã€‚
+//è¿™æ—¶å€™ç§»åŠ¨curr_word_parent_indexçš„æ‰€æœ‰å­èŠ‚ç‚¹ï¼Œè®©å‡º conflict_index è¿™ä¸ªä½ç½®ã€‚
+//æœ€åè¿”å›wordè¢«æ’å…¥æˆ–æŒªåŠ¨åˆ°çš„ä½ç½®
 dat_int32 dat_solve_conflict(dat_t* dat,dat_int32 conflict_index,dat_int32 curr_word_parent_index,dat_int32 word){
 	dat_int32 word_final_index;
 	dat_int32* children_index_list = dat_get_children(dat, curr_word_parent_index);
 	dat_int32 curr_word_index = get_value(dat->base[curr_word_parent_index]) + word;
 
-	//¿ÉÒÔ¸ù¾İË­µÄ½Úµã¶àÉÙÀ´ÒÆ¶¯ÄÄ¸ö¡£ÕâÀïÔİÊ±¼òµ¥´¦Àí, ½ö½öÒÆ¶¯ curr_word_parent_indexµÄ×Ó½Úµã
-	//table.insert(children_index_list, curr_word_index)--¼Ó½øÈ¥
+	//å¯ä»¥æ ¹æ®è°çš„èŠ‚ç‚¹å¤šå°‘æ¥ç§»åŠ¨å“ªä¸ªã€‚è¿™é‡Œæš‚æ—¶ç®€å•å¤„ç†, ä»…ä»…ç§»åŠ¨ curr_word_parent_indexçš„å­èŠ‚ç‚¹
+	//table.insert(children_index_list, curr_word_index)--åŠ è¿›å»
 	dat_int32 count = children_index_list[0];
 	children_index_list[++count] = curr_word_index;
 	children_index_list[0] = count;
@@ -374,34 +384,34 @@ dat_int32 dat_solve_conflict(dat_t* dat,dat_int32 conflict_index,dat_int32 curr_
 	return word_final_index;
 }
 
-void dat_insert(dat_t* dat, dat_int32* words){
+void dat_insert(dat_t* dat, dat_int32 words[]){
 	dat_int32 parent_index = 0;
 	dat_int32 word_index = words[1];
 	dat_int32 word = words[1];
 	while(word_index > dat->size)
 		dat_realloc(dat,1.5f);
 
-	if (dat->check[word_index] <= 0)//¿ÕÏĞ£¬Ö±½Ó²åÈë
+	if (dat->check[word_index] <= 0)//ç©ºé—²ï¼Œç›´æ¥æ’å…¥
 	{
 		dat_mark_use(dat, word_index);
 		dat->base[word_index] = 0;
-		dat->check[word_index] = word_index; //Í·½áµãµÄ¸¸½ÚµãÖ¸Ïò×Ô¼º
+		dat->check[word_index] = word_index; //å¤´ç»“ç‚¹çš„çˆ¶èŠ‚ç‚¹æŒ‡å‘è‡ªå·±
 		parent_index = word_index;
 
 		dat->count = dat->count + 1;
 	}
-	else if (dat->check[word_index] == word_index)//ÒÑ´æÔÚ£¬²»´¦Àí¡£
+	else if (dat->check[word_index] == word_index)//å·²å­˜åœ¨ï¼Œä¸å¤„ç†ã€‚
 		parent_index = word_index;
-	else //³åÍ»,Í·½áµã±»Õ¼ÓÃÁË
+	else //å†²çª,å¤´ç»“ç‚¹è¢«å ç”¨äº†
 	{
 		dat_int32 curr_hold_parent = dat->check[word_index];
 		dat_int32* children_index_list = dat_get_children(dat, curr_hold_parent);
-		dat_int32 first_ok_index = dat_search_for(dat,curr_hold_parent,children_index_list,word_index);//ÈÃ³öÍ·½áµãÎ»ÖÃ
+		dat_int32 first_ok_index = dat_search_for(dat,curr_hold_parent,children_index_list,word_index);//è®©å‡ºå¤´ç»“ç‚¹ä½ç½®
 		dat_int32 moved_to = dat_relocate(dat, curr_hold_parent, children_index_list, first_ok_index, word_index);
 		
 		dat_mark_use(dat,word_index);
-		set_value(&dat->base[word_index],0);
-		dat->check[word_index] = word_index;//--Í·½áµãµÄ¸¸½ÚµãÖ¸Ïò×Ô¼º
+		dat->base[word_index]=0;
+		dat->check[word_index] = word_index;//--å¤´ç»“ç‚¹çš„çˆ¶èŠ‚ç‚¹æŒ‡å‘è‡ªå·±
 		parent_index = word_index;
 		dat->count = dat->count + 1;
 	}
@@ -410,32 +420,144 @@ void dat_insert(dat_t* dat, dat_int32* words){
 		dat_int32 word_index = get_value(dat->base[parent_index]) + word;
 		while (word_index > dat->size)
 			dat_realloc(dat,1.5f);
-		if (word_index > 0 && dat->check[word_index] <= 0)//¿ÕÏĞ£¬Ö±½Ó²åÈë
+		if (word_index > 0 && dat->check[word_index] <= 0)//ç©ºé—²ï¼Œç›´æ¥æ’å…¥
 		{
 			dat_mark_use(dat, word_index);
-			set_value(&dat->base[word_index], 0);
+			dat->base[word_index]= 0;
 			dat->check[word_index] = parent_index;
 			parent_index = word_index;
 			dat->count = dat->count + 1;
 		}
 		else if (word_index > 0 &&
 			dat->check[word_index] == parent_index &&
-			parent_index != word_index)//ÒÑ¾­´æÔÚÁË£¬²»ĞèÒª²åÈë
+			parent_index != word_index)//å·²ç»å­˜åœ¨äº†ï¼Œä¸éœ€è¦æ’å…¥
 		{
 			parent_index = word_index;
 		}
-		else{//³åÍ»´¦Àí
+		else{//å†²çªå¤„ç†
 			parent_index = dat_solve_conflict(dat, word_index, parent_index, word);
 			dat->count = dat->count + 1;
 		}
+
+		dat_dump(dat);
 	}
 	
-	set_prop(&dat.base[parent_index],WordEndFlag);
+	set_prop(&dat->base[parent_index],WordEndFlag);
+}
+
+
+bool dat_search(dat_t* dat,dat_int32* words){
+	dat_int32 parent_idx = words[1];
+	if (parent_idx <=0 || parent_idx> dat->size)
+	{
+		return false;
+	}
+	if(words[0] == 1
+		&& dat->check[parent_idx] == parent_idx
+		&& get_prop(dat->base[parent_idx]) == WordEndFlag)
+	{
+		return true;
+	}
+	
+	for (dat_int32 i=2;i<=words[0];i++){
+		dat_int32 word = words[i];
+		if (get_value(dat->base[parent_idx]) + word <=0 || get_value(dat->base[parent_idx]) + word > dat->size)
+			return false;
+		if (dat->check [ get_value(dat->base[parent_idx]) + word ]  == parent_idx )
+			parent_idx = get_value(dat->base[parent_idx]) + word;
+		else
+			return false;
+	}
+	if (get_prop(dat->base[parent_idx]) == WordEndFlag)
+		return true;
+	else
+		return false;
+
+}
+
+//æ ¹æ®æŸä¸ªç´¢å¼•ï¼Œè·å¾—è¿™ä¸ªç´¢å¼•çš„å­—ç¬¦ä¸²
+std::string dat_get_words(dat_t *dat,dat_int32 idx){
+	std::string words = "";
+	while(true) {
+		dat_int32 parent_idx = dat->check[idx];
+		if (parent_idx <= 0)//æ— æ•ˆ
+			return "";// 'æ— æ•ˆä½ç½®'..idx
+		
+		dat_int32 word = 0;
+		//è‡ªå·±æ˜¯å¤´ç»“ç‚¹ï¼Œæ‰€åœ¨ä½ç½®å°±æ˜¯ç¼–ç 
+		if (dat->check[idx] == idx)
+			word = parent_idx;
+		else// å­èŠ‚ç‚¹ï¼Œç”¨å­èŠ‚ç‚¹ä½ç½®ï¼Œå‡å»çˆ¶èŠ‚ç‚¹çš„baseå€¼
+			word = idx - get_value(dat->base[parent_idx]);
+	
+		words =  tostring(word) + "," + words;
+		if (dat->check[idx] == idx)
+			break;
+		idx = parent_idx;
+	}
+	return words;
+}
+
+void dat_dump_all_words(dat_t * dat){
+	std::string all_words = "";
+	for (dat_int32 i=dat->size-1;i>=0;i=i-1){
+		dat_int32* chindren = dat_get_children(dat,i);
+		if (chindren[0] == 0){ //æ²¡æœ‰å­èŠ‚ç‚¹çš„æ‰ç®—
+			std::string str = dat_get_words(dat,i);
+			if (str.length() > 0) {
+				all_words = all_words + "\n" + str;
+			}
+		}
+	}
+	std::cout << "å½“å‰åŒ…å«:" + all_words + "\n\n";
 }
 
 int main()
 {
-	dat_t dat = dat_create(10);
+	bool is_find = true;
+	dat_t* dat = dat_create(10);
+	dat_dump(dat);
 
+	dat_int32 word1[2] = {1, 10 };
+	dat_int32 word2[3] = {2, 10,20 };
+	dat_int32 word3[4] = {3, 10,20,30 };
+	dat_int32 word4[5] = {4, 40,50,30,20 };
+	dat_int32 word5[6] = {5, 50,40,30,20,10 };
+
+	dat_insert(dat, word1);
+	is_find = dat_search(dat, word1);
+	dat_dump_all_words(dat);
+	dat_dump(dat);
+
+	dat_insert(dat, word2);
+	is_find = dat_search(dat, word1);
+	is_find = dat_search(dat, word2);
+	dat_dump_all_words(dat);
+	dat_dump(dat);
+
+	dat_insert(dat, word3);
+	is_find = dat_search(dat, word1);
+	is_find = dat_search(dat, word2);
+	is_find = dat_search(dat, word3);
+	dat_dump_all_words(dat);
+	dat_dump(dat);
+		
+	dat_insert(dat, word4);
+	is_find = dat_search(dat, word1);
+	is_find = dat_search(dat, word2);
+	is_find = dat_search(dat, word3);
+	is_find = dat_search(dat, word4);
+	dat_dump_all_words(dat);
+	dat_dump(dat);
+
+	dat_insert(dat, word5);
+	is_find = dat_search(dat, word1);
+	is_find = dat_search(dat, word2);
+	is_find = dat_search(dat, word3);
+	is_find = dat_search(dat, word4);
+	is_find = dat_search(dat, word5);
+	dat_dump_all_words(dat);
+	dat_dump(dat);
+ 
 	return 0;
 }
