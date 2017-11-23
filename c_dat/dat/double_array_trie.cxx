@@ -15,9 +15,9 @@ typedef short dat_int16;
 typedef int dat_int32;
 
 
-dat_uint32 WordEndFlag = 1;
-dat_uint32 AlphabetMin = 1;
-dat_uint32 AlphabetMax = 256;
+dat_int32 WordEndFlag = 1;
+dat_int32 AlphabetMin = 1;
+dat_int32 AlphabetMax = 256;
 
 //数据占用bit数量
 #define DATA_BIT_NUM	9
@@ -205,7 +205,7 @@ void dat_dump(dat_t *dat)
 	string check = "check:\t";
 	string value = "value:\t";
 
-	for (dat_int32 i = 0; i<dat->size + 1; i++)
+	for (dat_int32 i = 0; i < dat->size + 1; i++)
 	{
 		index = index + ",\t" + tostring(i);
 		dat_int32 base_v = dat->base[i];
@@ -221,11 +221,11 @@ void dat_dump(dat_t *dat)
 			{
 				value = value + ",\t" + tostring(i);
 			}
-			else{
+			else {
 				value = value + ",\t" + tostring(i - get_value(dat->base[check_v]));
 			}
 		}
-		else{
+		else {
 			value = value + ",\t" + "x";
 		}
 	}
@@ -276,7 +276,7 @@ dat_int32 dat_search_for(dat_t* dat, dat_int32 parent_index, dat_int32* word_id_
 		dat_realloc(dat, 1.5f);
 
 	dat_int32 free_curr_try = -dat->base[0];
-	while (true){
+	while (true) {
 		dat_int32 i = 1;
 		dat_int32 len = word_id_list_size;
 		while (i <= len)
@@ -315,18 +315,18 @@ dat_int32 dat_relocate(dat_t* dat, dat_int32 parent_index, dat_int32* children_i
 	//diff 大于0，整体都向右移动了。需要从右向左开始遍历移动子节点,因为兄弟节点间是会覆盖的，需要注意方向。
 	//diff 小于0，整体都向左移动了。相反
 	dat_int32 from, to, step;
-	if (diff > 0){
+	if (diff > 0) {
 		from = children_index_list[0];
 		to = 1;
 		step = -1;
 	}
-	else{
+	else {
 		from = 1;
 		to = children_index_list[0];
 		step = 1;
 	}
 
-	for (dat_int32 i = from; ; i = i + step){
+	for (dat_int32 i = from; ; i = i + step) {
 		dat_int32 child_index = children_index_list[i];
 		dat_int32 child_new_index = child_index + diff;
 		if (watch_index == child_index)
@@ -335,20 +335,20 @@ dat_int32 dat_relocate(dat_t* dat, dat_int32 parent_index, dat_int32* children_i
 		//1. 可能某个child是将要加入到 parent_index 的子节点， 那么child_index可能是<=0的，也可能超过dat大小
 		//2. 对于某个子节点，计算出来的下标和父节点重复在一起是不可能的，那么这个子节点一定是新的子节点，还没
 		//来得及加入到dat里，所以需要限制条件: check[child] ~= parent_index.
-		if (child_index > 0 && (dat->check[child_index] == parent_index) && (child_index != parent_index)){
+		if (child_index > 0 && (dat->check[child_index] == parent_index) && (child_index != parent_index)) {
 			dat->base[child_new_index] = dat->base[child_index];//拷贝数据
 			dat->check[child_new_index] = dat->check[child_index];//拷贝数据
 
 			dat_int32 child_base = get_value(dat->base[child_index]);
-			for (dat_int32 j = child_base + AlphabetMin; i <= child_base + AlphabetMax; j++)//某个子节点移动到新位置，还要修改子节点的子节点的check，指向新的位置
+			for (dat_int32 j = child_base + AlphabetMin; j <= child_base + AlphabetMax; j++)//某个子节点移动到新位置，还要修改子节点的子节点的check，指向新的位置
 			{
 				if (j > 0 && j <= dat->size && dat->check[j] == child_index && dat->check[j] != j)
 					dat->check[j] = child_new_index;
 			}
 			dat_mark_unuse(dat, child_index);//释放
 		}
-		else{//child_index 将要成为s的子节点
-			//新节点
+		else {//child_index 将要成为s的子节点
+			  //新节点
 			dat->base[child_new_index] = 0;
 			dat->check[child_new_index] = parent_index;
 		}
@@ -368,7 +368,7 @@ dat_int32 dat_relocate(dat_t* dat, dat_int32 parent_index, dat_int32* children_i
 //想要把 word 插入，作为 curr_word_parent_index 的子节点，但是 curr_word_index 这个位置被占用了。
 //这时候移动curr_word_parent_index的所有子节点，让出 conflict_index 这个位置。
 //最后返回word被插入或挪动到的位置
-dat_int32 dat_solve_conflict(dat_t* dat, dat_int32 conflict_index, dat_int32 curr_word_parent_index, dat_int32 word){
+dat_int32 dat_solve_conflict(dat_t* dat, dat_int32 conflict_index, dat_int32 curr_word_parent_index, dat_int32 word) {
 	dat_int32 word_final_index;
 	dat_int32* children_index_list = dat_get_children(dat, curr_word_parent_index);
 	dat_int32 curr_word_index = get_value(dat->base[curr_word_parent_index]) + word;
@@ -385,7 +385,7 @@ dat_int32 dat_solve_conflict(dat_t* dat, dat_int32 conflict_index, dat_int32 cur
 	return word_final_index;
 }
 
-void dat_insert(dat_t* dat, dat_int32 words[]){
+void dat_insert(dat_t* dat, dat_int32 words[]) {
 	dat_int32 parent_index = 0;
 	dat_int32 word_index = words[1];
 	dat_int32 word = words[1];
@@ -416,7 +416,7 @@ void dat_insert(dat_t* dat, dat_int32 words[]){
 		parent_index = word_index;
 		dat->count = dat->count + 1;
 	}
-	for (dat_int32 i = 2; i <= words[0]; i++){
+	for (dat_int32 i = 2; i <= words[0]; i++) {
 		dat_int32 word = words[i];
 		dat_int32 word_index = get_value(dat->base[parent_index]) + word;
 		while (word_index > dat->size)
@@ -435,7 +435,7 @@ void dat_insert(dat_t* dat, dat_int32 words[]){
 		{
 			parent_index = word_index;
 		}
-		else{//冲突处理
+		else {//冲突处理
 			parent_index = dat_solve_conflict(dat, word_index, parent_index, word);
 			dat->count = dat->count + 1;
 		}
@@ -447,9 +447,9 @@ void dat_insert(dat_t* dat, dat_int32 words[]){
 }
 
 
-bool dat_search_check_prop(dat_t* dat, dat_int32* words){
+bool dat_search_check_prop(dat_t* dat, dat_int32* words) {
 	dat_int32 parent_idx = words[1];
-	if (parent_idx <= 0 || parent_idx> dat->size)
+	if (parent_idx <= 0 || parent_idx > dat->size)
 	{
 		return false;
 	}
@@ -460,7 +460,7 @@ bool dat_search_check_prop(dat_t* dat, dat_int32* words){
 		return true;
 	}
 
-	for (dat_int32 i = 2; i <= words[0]; i++){
+	for (dat_int32 i = 2; i <= words[0]; i++) {
 		dat_int32 word = words[i];
 		if (get_value(dat->base[parent_idx]) + word <= 0 || get_value(dat->base[parent_idx]) + word > dat->size)
 			return false;
@@ -476,7 +476,7 @@ bool dat_search_check_prop(dat_t* dat, dat_int32* words){
 
 }
 
-bool dat_search(dat_t* dat, dat_int32* words){
+bool dat_search(dat_t* dat, dat_int32* words) {
 	dat_int32 parent_idx = words[1];
 	if (parent_idx <= 0 || parent_idx > dat->size)
 	{
@@ -488,7 +488,7 @@ bool dat_search(dat_t* dat, dat_int32* words){
 		return true;
 	}
 
-	for (dat_int32 i = 2; i <= words[0]; i++){
+	for (dat_int32 i = 2; i <= words[0]; i++) {
 		dat_int32 word = words[i];
 		if (get_value(dat->base[parent_idx]) + word <= 0 || get_value(dat->base[parent_idx]) + word > dat->size)
 			return false;
@@ -501,7 +501,7 @@ bool dat_search(dat_t* dat, dat_int32* words){
 }
 
 //根据某个索引，获得这个索引的字符串
-std::string dat_get_words(dat_t *dat, dat_int32 idx){
+std::string dat_get_words(dat_t *dat, dat_int32 idx) {
 	std::string words = "";
 	while (true) {
 		dat_int32 parent_idx = dat->check[idx];
@@ -523,11 +523,11 @@ std::string dat_get_words(dat_t *dat, dat_int32 idx){
 	return words;
 }
 
-void dat_dump_all_words(dat_t * dat){
+void dat_dump_all_words(dat_t * dat) {
 	std::string all_words = "";
-	for (dat_int32 i = dat->size - 1; i >= 0; i = i - 1){
+	for (dat_int32 i = dat->size - 1; i >= 0; i = i - 1) {
 		dat_int32* chindren = dat_get_children(dat, i);
-		if (chindren[0] == 0){ //没有子节点的才算
+		if (chindren[0] == 0) { //没有子节点的才算
 			std::string str = dat_get_words(dat, i);
 			if (str.length() > 0) {
 				all_words = all_words + "\n" + str;
