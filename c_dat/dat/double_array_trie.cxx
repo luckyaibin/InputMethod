@@ -26,22 +26,22 @@ dat_int32 AlphabetMax = 256;
 
 // 0000 0000,0000 0000,0000 0001,1111 1111
 // 0000 0000,0000 0000,1111 1110,0000 0000
-#define DATA_BIT_MASK 0x000001FF // ((1<<(DATA_BIT_NUM+))-1)
-#define EXT_BIT_MASK  0x0000FE00 //
+static dat_int32 DATA_BIT_MASK = 0x000001FF; // ((1<<(DATA_BIT_NUM+))-1)
+static dat_int32 EXT_BIT_MASK = 0x0000FE00;//
 
 
-#define DAT_SIGN_MASK  0x80000000
-#define DAT_FLAG_MASK 0x70000000
-#define DAT_DATA_MASK  0x0FFFFFFF
+static dat_int32 DAT_SIGN_MASK = 0x80000000;
+static dat_int32 DAT_FLAG_MASK = 0x70000000;
+static dat_int32 DAT_DATA_MASK = 0x0FFFFFFF;
 //#define get_value(v)	((v) & DATA_BIT_MASK)
 //#define get_prop(v)		( ( (v) & EXT_BIT_MASK )>>DATA_BIT_NUM )
 
 //#define set_value(to_addr_of_v,from_v) (*to_addr_of_v = ( ( (*to_addr_of_v)&(~DATA_BIT_MASK)) | (from_v & DATA_BIT_MASK) ) )
 //#define set_prop(to_addr_of_v,from_v)  (*to_addr_of_v = ( ( (*to_addr_of_v)&(~EXT_BIT_MASK)) | ( (from_v & (EXT_BIT_MASK>>DATA_BIT_NUM) )<<DATA_BIT_NUM) ) )
 
-/*  最高位为符号位s，接下来 n 比特位为标记位f，剩下的为数据位d
-	1 000 0000  00000000 00000000 00000000
-	s  f  |<-------------- d ----------->|
+/*  最高位为符号位s，表示数据d的正负；接下来 n 比特位为标记位f，剩下的为数据位d
+1 000 0000  00000000 00000000 00000000
+s  f  |<-------------- d ----------->|
 */
 dat_int32 get_value(dat_int32 v)
 {
@@ -59,7 +59,6 @@ dat_int32 get_value(dat_int32 v)
 
 dat_int32 get_prop(dat_int32 v)
 {
-	 
 	dat_int32 vv = (DAT_FLAG_MASK & v);
 	vv = vv >> 28;
 	return vv;
@@ -68,10 +67,10 @@ dat_int32 get_prop(dat_int32 v)
 void set_value(dat_int32 *to_addr_of_v, dat_int32 from_v)
 {
 	//超过了上限和下限
-	if (from_v > DAT_DATA_MASK || from_v < -DAT_DATA_MASK)
-	{
-		exit(-1);
-	}
+	if (from_v > DAT_DATA_MASK)
+		exit(-100);
+	if(from_v < -DAT_DATA_MASK)
+		exit(-200);
 	dat_int32 to_v = to_addr_of_v[0];
 	dat_int32 to_v_flag = DAT_FLAG_MASK & to_v;
 	dat_int32 final_v = 0;
@@ -90,7 +89,7 @@ void set_value(dat_int32 *to_addr_of_v, dat_int32 from_v)
 void set_prop(dat_int32 *to_addr_of_v, dat_int32 prop_v)
 {
 	dat_int32 to_v = to_addr_of_v[0];
-	dat_int32 to_v_no_flag = to_v & ( ~DAT_FLAG_MASK );
+	dat_int32 to_v_no_flag = to_v & (~DAT_FLAG_MASK);
 	to_v = to_v_no_flag | (prop_v << 28);
 	*to_addr_of_v = to_v;
 }
@@ -384,7 +383,7 @@ dat_int32 dat_relocate(dat_t* dat, dat_int32 parent_index, dat_int32* children_i
 		step = 1;
 	}
 
-	for (dat_int32 i = from; ; i = i + step) {
+	for (dat_int32 i = from;; i = i + step) {
 		dat_int32 child_index = children_index_list[i];
 		dat_int32 child_new_index = child_index + diff;
 		if (watch_index == child_index)
@@ -406,7 +405,7 @@ dat_int32 dat_relocate(dat_t* dat, dat_int32 parent_index, dat_int32* children_i
 			dat_mark_unuse(dat, child_index);//释放
 		}
 		else {//child_index 将要成为s的子节点
-			  //新节点
+			//新节点
 			dat->base[child_new_index] = 0;
 			dat->check[child_new_index] = parent_index;
 		}
@@ -557,7 +556,10 @@ bool dat_search(dat_t* dat, dat_int32* words) {
 		else
 			return false;
 	}
-	return true;
+	if( get_prop(dat->base[parent_idx]) == WordEndFlag)
+		return true;
+	else
+		return false;
 }
 
 //根据某个索引，获得这个索引的字符串
@@ -609,15 +611,52 @@ int main()
 	dat_int32 word4[5] = { 4, 40, 50, 30, 20 };
 	dat_int32 word5[6] = { 5, 50, 40, 30, 20, 10 };
 
-	dat_int32 count = 10000;
-	dat_int32 *word6 = (dat_int32*)malloc(sizeof(dat_int32) * (count + 1));
-	word6[0] = count;
-	for (dat_int32 i = 1; i < count; i++)
+	#define TRY_COUNT  27
+	dat_int32 * each_try[TRY_COUNT] = { 0 };
+	for (int try_count = 0; try_count < TRY_COUNT; try_count++)
 	{
-		dat_int32 v = rand();
+		if (try_count==26)
+		{
+			std::cout << "checkt it.";
+		}
+		dat_int32 count = rand() % 20 + 1;
+		dat_int32 *word6 = (dat_int32*)malloc(sizeof(dat_int32)* (count + 1));
+		word6[0] = count;
+		for (dat_int32 i = 1; i <= count; i++)
+		{
+			dat_int32 v = rand() % 256 + 1;
+			word6[i] = v;
+		}
+		dat_insert(dat, word6);
+		is_find = dat_search(dat, word6);
+		if (!is_find)
+		{
+			std::cout << "error...";
+		}
+		each_try[try_count] = word6;//保存起来
+	}
+
+	//挨个都遍历一边，看是否插入成功
+	for (int try_count = 0; try_count < TRY_COUNT; try_count++)
+	{
+		dat_int32 *word6 = each_try[try_count];
+		is_find = dat_search(dat, word6);
+		if (!is_find)
+		{
+			std::cout << "error...";
+		}
+	}
+
+	dat_int32 count = 10;
+	dat_int32 *word6 = (dat_int32*)malloc(sizeof(dat_int32)* (count + 1));
+	word6[0] = count;
+	for (dat_int32 i = 1; i <= count; i++)
+	{
+		dat_int32 v = rand() % 256 + 1;
 		word6[i] = v;
 	}
 	dat_insert(dat, word6);
+	is_find = dat_search(dat, word6);
 	dat_insert(dat, word1);
 	is_find = dat_search(dat, word1);
 	dat_dump_all_words(dat);
