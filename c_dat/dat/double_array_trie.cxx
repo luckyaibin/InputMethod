@@ -30,11 +30,71 @@ dat_int32 AlphabetMax = 256;
 #define EXT_BIT_MASK  0x0000FE00 //
 
 
-#define get_value(v)	((v) & DATA_BIT_MASK)
-#define get_prop(v)		( ( (v) & EXT_BIT_MASK )>>DATA_BIT_NUM )
+#define DAT_SIGN_MASK  0x80000000
+#define DAT_FLAG_MASK 0x70000000
+#define DAT_DATA_MASK  0x0FFFFFFF
+//#define get_value(v)	((v) & DATA_BIT_MASK)
+//#define get_prop(v)		( ( (v) & EXT_BIT_MASK )>>DATA_BIT_NUM )
 
-#define set_value(to_addr_of_v,from_v) (*to_addr_of_v = ( ( (*to_addr_of_v)&(~DATA_BIT_MASK)) | (from_v & DATA_BIT_MASK) ) )
-#define set_prop(to_addr_of_v,from_v)  (*to_addr_of_v = ( ( (*to_addr_of_v)&(~EXT_BIT_MASK)) | ( (from_v & (EXT_BIT_MASK>>DATA_BIT_NUM) )<<DATA_BIT_NUM) ) )
+//#define set_value(to_addr_of_v,from_v) (*to_addr_of_v = ( ( (*to_addr_of_v)&(~DATA_BIT_MASK)) | (from_v & DATA_BIT_MASK) ) )
+//#define set_prop(to_addr_of_v,from_v)  (*to_addr_of_v = ( ( (*to_addr_of_v)&(~EXT_BIT_MASK)) | ( (from_v & (EXT_BIT_MASK>>DATA_BIT_NUM) )<<DATA_BIT_NUM) ) )
+
+/*  最高位为符号位s，接下来 n 比特位为标记位f，剩下的为数据位d
+	1 000 0000  00000000 00000000 00000000
+	s  f  |<-------------- d ----------->|
+*/
+dat_int32 get_value(dat_int32 v)
+{
+	if (DAT_SIGN_MASK & v)//有符号位，是负数
+	{
+		dat_int32 vv = (DAT_DATA_MASK & v);
+		return -vv;
+	}
+	else
+	{
+		dat_int32 vv = (DAT_DATA_MASK & v);
+		return vv;
+	}
+}
+
+dat_int32 get_prop(dat_int32 v)
+{
+	 
+	dat_int32 vv = (DAT_FLAG_MASK & v);
+	vv = vv >> 28;
+	return vv;
+}
+
+void set_value(dat_int32 *to_addr_of_v, dat_int32 from_v)
+{
+	//超过了上限和下限
+	if (from_v > DAT_DATA_MASK || from_v < -DAT_DATA_MASK)
+	{
+		exit(-1);
+	}
+	dat_int32 to_v = to_addr_of_v[0];
+	dat_int32 to_v_flag = DAT_FLAG_MASK & to_v;
+	dat_int32 final_v = 0;
+	if (from_v >= 0)
+	{
+		final_v = to_v_flag | from_v;
+	}
+	else
+	{
+		final_v = to_v_flag | (-from_v);
+		final_v = final_v | DAT_SIGN_MASK;
+	}
+	*to_addr_of_v = final_v;
+}
+
+void set_prop(dat_int32 *to_addr_of_v, dat_int32 prop_v)
+{
+	dat_int32 to_v = to_addr_of_v[0];
+	dat_int32 to_v_no_flag = to_v & ( ~DAT_FLAG_MASK );
+	to_v = to_v_no_flag | (prop_v << 28);
+	*to_addr_of_v = to_v;
+}
+
 typedef struct dat_base_tag
 {
 	dat_uint32 flag : 1;
@@ -51,8 +111,6 @@ typedef struct dat_tag {
 
 
 void dat_dump(dat_t *dat);
-
-#define new_node(v) 
 
 dat_t * dat_create(dat_int32 size)
 {
@@ -357,9 +415,11 @@ dat_int32 dat_relocate(dat_t* dat, dat_int32 parent_index, dat_int32* children_i
 	}
 	//修改父节s点的base值 :dat.base[parent_index] = dat.base[parent_index] + diff;
 	dat_int32 parent_new_base_value = get_value(dat->base[parent_index]) + diff;//这里新的父节点的base值parent_new_base_value变成了是负数，设置回去就出错了
+	//dat_int32 parent_new_base_value = dat->base[parent_index] + diff;
 	dat_int32 parent_new_base_prop = get_prop(dat->base[parent_index]);
 
-	dat->base[parent_index] = 0;
+	//dat->base[parent_index] = 0;
+	//dat->base[parent_index] = parent_new_base_value;
 	set_value(&dat->base[parent_index], parent_new_base_value);
 	set_prop(&dat->base[parent_index], parent_new_base_prop);
 	return watch_index;
@@ -440,10 +500,10 @@ void dat_insert(dat_t* dat, dat_int32 words[]) {
 			dat->count = dat->count + 1;
 		}
 
-		dat_dump(dat);
+		//dat_dump(dat);
 	}
 
-	//set_prop(&dat->base[parent_index], WordEndFlag);
+	set_prop(&dat->base[parent_index], WordEndFlag);
 }
 
 
@@ -549,6 +609,15 @@ int main()
 	dat_int32 word4[5] = { 4, 40, 50, 30, 20 };
 	dat_int32 word5[6] = { 5, 50, 40, 30, 20, 10 };
 
+	dat_int32 count = 10000;
+	dat_int32 *word6 = (dat_int32*)malloc(sizeof(dat_int32) * (count + 1));
+	word6[0] = count;
+	for (dat_int32 i = 1; i < count; i++)
+	{
+		dat_int32 v = rand();
+		word6[i] = v;
+	}
+	dat_insert(dat, word6);
 	dat_insert(dat, word1);
 	is_find = dat_search(dat, word1);
 	dat_dump_all_words(dat);
