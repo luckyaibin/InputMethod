@@ -19,11 +19,11 @@ typedef int dat_int32;
 dat_int32 WordEndFlag = 1;
 dat_int32 AlphabetMin = 1;
 dat_int32 AlphabetMax = 256;
- 
+
 static dat_int32 DAT_SIGN_MASK = 0x80000000;
 static dat_int32 DAT_FLAG_MASK = 0x70000000;
 static dat_int32 DAT_DATA_MASK = 0x0FFFFFFF;
- 
+
 /*  最高位为符号位s，表示数据d的正负；接下来 n 比特位为标记位f，剩下的为数据位d
 1 000 0000  00000000 00000000 00000000
 s  f  |<-------------- d ----------->|
@@ -73,7 +73,7 @@ void set_value(dat_int32 *to_addr_of_v, dat_int32 from_v)
 
 void set_prop(dat_int32 *to_addr_of_v, dat_int32 prop_v)
 {
-	if (prop_v != 1 && prop_v !=0)
+	if (prop_v != 1 && prop_v != 0)
 	{
 		std::cout << "wrong prop.";
 	}
@@ -116,7 +116,7 @@ dat_t * dat_create(dat_int32 size)
 		if (i == 0)
 		{
 			d->base[i] = -1;
-			d->check[i] = -init_size;
+			d->check[i] = -(init_size-1);
 		}
 		else if (i == init_size - 1)
 		{
@@ -283,7 +283,7 @@ void dat_dump(dat_t *dat)
 		+ value + "\n\n";
 	std::cout << log;
 	ofstream outfile;
-	outfile.open("dat_log.txt");
+	outfile.open("dat_log.txt", std::ios::app);
 	outfile << log;
 	outfile.close();
 }
@@ -356,6 +356,17 @@ dat_int32 dat_search_for(dat_t* dat, dat_int32 parent_index, dat_int32* word_id_
 }
 
 
+void dat_check_test(dat_t * dat)
+{
+	if (dat->size >= 11)
+	{
+		if (dat->base[11] == -16)
+		{
+			std::cout << "fuck.";
+		}
+	}
+}
+
 
 //移动 parent_index 的某个子节点ci ，除修改parent_index的base值，ci的子节点d1,d2..di等的check也要修改
 //移动 parent_index 的所有的转移状态 children_index_list ，到 base_index 开始的索引
@@ -399,7 +410,7 @@ dat_int32 dat_relocate(dat_t* dat, dat_int32 parent_index, dat_int32* children_i
 			dat_mark_unuse(dat, child_index);//释放
 		}
 		else {//child_index 将要成为s的子节点
-			  //新节点
+			//新节点
 			dat->base[child_new_index] = 0;
 			dat->check[child_new_index] = parent_index;
 		}
@@ -420,10 +431,12 @@ dat_int32 dat_relocate(dat_t* dat, dat_int32 parent_index, dat_int32* children_i
 		std::cout << "it's wrong.";
 	}
 
+	dat_check_test(dat);
+
 	set_value(&dat->base[parent_index], parent_new_base_value);
 	set_prop(&dat->base[parent_index], parent_new_base_prop);
 
-	
+
 	return watch_index;
 }
 
@@ -501,10 +514,7 @@ void dat_insert(dat_t* dat, dat_int32 words[]) {
 			parent_index = dat_solve_conflict(dat, word_index, parent_index, word);
 			dat->count = dat->count + 1;
 		}
-
-		//dat_dump(dat);
 	}
-
 	set_prop(&dat->base[parent_index], WordEndFlag);
 }
 
@@ -614,16 +624,11 @@ int main()
 	dat_int32 word4[5] = { 4, 40, 50, 30, 20 };
 	dat_int32 word5[6] = { 5, 50, 40, 30, 20, 10 };
 
-#define TRY_COUNT  27
+#define TRY_COUNT  27000
 	dat_int32 * each_try[TRY_COUNT] = { 0 };
 	for (int try_count = 0; try_count < TRY_COUNT; try_count++)
 	{
-		if (try_count == 26)
-		{
-			std::cout << "checkt it.";
-			dat_dump(dat);
-		}
-		dat_int32 count = rand() % 20 + 1;
+		dat_int32 count = rand() % 30 + 1;
 		dat_int32 *word6 = (dat_int32*)malloc(sizeof(dat_int32)* (count + 1));
 		word6[0] = count;
 		for (dat_int32 i = 1; i <= count; i++)
@@ -637,11 +642,6 @@ int main()
 		{
 			std::cout << "insert self error...";
 		}
-		if (try_count == 26)
-		{
-			std::cout << "after insert,checkt it.";
-			dat_dump(dat);
-		}
 		each_try[try_count] = word6;//保存起来
 	}
 
@@ -649,14 +649,14 @@ int main()
 	for (int try_count = 0; try_count < TRY_COUNT; try_count++)
 	{
 		dat_int32 *word6 = each_try[try_count];
-		if(try_count==8)
-			is_find = dat_search(dat, word6);
 		is_find = dat_search(dat, word6);
 		if (!is_find)
 		{
 			std::cout << "error...";
+			dat_dump(dat);
 		}
 	}
+	dat_dump(dat);
 	return 0;
 	dat_int32 count = 10;
 	dat_int32 *word6 = (dat_int32*)malloc(sizeof(dat_int32)* (count + 1));
