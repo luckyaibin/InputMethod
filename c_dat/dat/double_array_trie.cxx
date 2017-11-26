@@ -656,7 +656,12 @@ int main()
 			dat_dump(dat);
 		}
 	}
-	dat_dump(dat);
+	ofstream outfile;
+	outfile.open("dat_dat_log.txt", std::ios::app | std::ios::binary);
+	outfile.write((char*)dat->base, dat->size * 4);
+	outfile.write((char*)dat->check, dat->size * 4);
+	outfile.close();
+	
 	return 0;
 	dat_int32 count = 10;
 	dat_int32 *word6 = (dat_int32*)malloc(sizeof(dat_int32)* (count + 1));
