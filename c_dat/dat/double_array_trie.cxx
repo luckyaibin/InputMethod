@@ -615,13 +615,17 @@ void dat_dump_all_words(dat_t * dat) {
 
 int main()
 {
-		
+
+
+	ofstream outfile;
+	outfile.open("dat_dat_log.txt", std::ios::app | std::ios::binary);
+			
 	FILE *file = fopen("dict.txt", "rb");
 	if (!file)
 		return -200;
 	dat_t* dat = dat_create(10);
 
-	dat_int32 buff[100] = { 0 };
+	dat_uint8 buff[100] = { 0 };
 	int c = 0;
 	int count = 0;
 	int status = 0;
@@ -652,8 +656,9 @@ int main()
 			if (c == ' ' || c == '\t')//读完字符，读后面属性
 			{
 				buff[0] = count;//存入数量
-				dat_insert(dat, buff);
+				//dat_insert(dat, buff);
 				//printf("%s", buff[1]);
+				outfile.write((char*)&buff[1], count);
 				status = 3;//读取属性
 			}
 			else
@@ -670,6 +675,7 @@ int main()
 			}
 		}
 	}
+	outfile.close();
 	return 0;
 }
 
