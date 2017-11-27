@@ -9,7 +9,7 @@
 using std::ofstream;
 using std::ifstream;
 using std::string;
-
+ 
 typedef unsigned char dat_uint8;
 typedef unsigned int dat_uint32;
 typedef unsigned short dat_uin16;
@@ -411,7 +411,7 @@ dat_int32 dat_relocate(dat_t* dat, dat_int32 parent_index, dat_int32* children_i
 			dat_mark_unuse(dat, child_index);//释放
 		}
 		else {//child_index 将要成为s的子节点
-			  //新节点
+			//新节点
 			dat->base[child_new_index] = 0;
 			dat->check[child_new_index] = parent_index;
 		}
@@ -461,7 +461,7 @@ dat_int32 dat_solve_conflict(dat_t* dat, dat_int32 conflict_index, dat_int32 cur
 	return word_final_index;
 }
 
-void dat_insert(dat_t* dat, dat_int32 words[]) {
+void dat_insert(dat_t* dat, dat_uint8 words[]) {
 	dat_int32 parent_index = 0;
 	dat_int32 word_index = words[1];
 	dat_int32 word = words[1];
@@ -549,7 +549,7 @@ bool dat_search_check_prop(dat_t* dat, dat_int32* words) {
 
 }
 
-bool dat_search(dat_t* dat, dat_int32* words) {
+bool dat_search(dat_t* dat, dat_uint8* words) {
 	dat_int32 parent_idx = words[1];
 	if (parent_idx <= 0 || parent_idx > dat->size)
 	{
@@ -613,14 +613,9 @@ void dat_dump_all_words(dat_t * dat) {
 	std::cout << "当前包含:" + all_words + "\n\n";
 }
 
-int main()
+dat_int32 dat_create_dictionary(const char * from, const char * to)
 {
-
-
-	ofstream outfile;
-	outfile.open("dat_dat_log.txt", std::ios::app | std::ios::binary);
-			
-	FILE *file = fopen("dict.txt", "rb");
+	FILE *file = fopen(from, "rb");
 	if (!file)
 		return -200;
 	dat_t* dat = dat_create(10);
@@ -629,7 +624,7 @@ int main()
 	int c = 0;
 	int count = 0;
 	int status = 0;
-	while ( (c = getc(file)) != EOF)
+	while ((c = getc(file)) != EOF)
 	{
 		/// 编号 [空格] 字符 [空格] 属性\n
 		if (0 == status) {//读取编号中
@@ -652,13 +647,13 @@ int main()
 
 		if (2 == status)//读取字符中
 		{
-			
+
 			if (c == ' ' || c == '\t')//读完字符，读后面属性
 			{
 				buff[0] = count;//存入数量
-				//dat_insert(dat, buff);
+				dat_insert(dat, buff);
 				//printf("%s", buff[1]);
-				outfile.write((char*)&buff[1], count);
+				//outfile.write((char*)&buff[1], count);
 				status = 3;//读取属性
 			}
 			else
@@ -675,11 +670,120 @@ int main()
 			}
 		}
 	}
-	outfile.close();
+	fclose(file);
+
+	FILE *tofile = fopen(to, "wb");
+	fwrite(&dat->size, sizeof(dat->size),1, tofile);
+	fwrite(&dat->count, sizeof(dat->count), 1, tofile);
+	fwrite(dat->base, sizeof(dat->base[0]), dat->size, tofile);
+	fwrite(dat->check, sizeof(dat->check[0]), dat->size, tofile);
+
+	fclose(tofile);
+
+	free(dat->base);
+	free(dat->check);
+	free(dat);
 	return 0;
 }
 
+dat_t* dat_load_dictionary(const char * file_name)
+{
+	FILE *file = fopen(file_name, "rb");
+	if (!file)
+		return 0;
 
+	dat_int32 size = 0;
+	dat_int32 count = 0;
+	fread(&size, sizeof(dat_int32), 1, file);
+	fread(&count, sizeof(dat_int32), 1, file);
+
+	dat_t * dat = (dat_t*)malloc(sizeof(dat_t));
+	dat->size = size;
+	dat->count = count;
+	dat->base = (dat_int32 *)malloc(sizeof(dat_int32)* size);
+	dat->check = (dat_int32 *)malloc(sizeof(dat_int32)* dat->size);
+
+	fread(dat->base, sizeof(dat_int32), size, file);
+	fread(dat->check, sizeof(dat_int32), size, file);
+	return dat;
+}
+
+int main()
+{
+
+
+	//ofstream outfile;
+	//outfile.open("dat_dat_log.txt", std::ios::app | std::ios::binary);
+ 
+	//dat_create_dictionary("dict.txt", "dat_dict.txt");
+
+
+	dat_t * dat = dat_load_dictionary("dat_dict.txt");
+
+	
+	//遍历一边，检查是否每个在dat里都能找到
+	FILE *file = fopen("dict.txt", "rb");
+	if (!file)
+		return -200;
+	dat_uint8 buff[100] = { 0 };
+	int c = 0;
+	int count = 0;
+	int status = 0;
+	while ((c = getc(file)) != EOF)
+	{
+		/// 编号 [空格] 字符 [空格] 属性\n
+		if (0 == status) {//读取编号中
+			if (c == ' ' || c == '\t')
+			{
+				status = 1;//读取空格中
+			}
+		}
+
+		if (1 == status)//读取空格中
+		{
+			if (c != ' ' && c != '\t')//读完了空格，读到了字符
+			{
+				memset(buff, 0, sizeof(buff));
+				status = 2;//读取字符
+				count = 0;
+				//buff[++count] = c;
+			}
+		}
+
+		if (2 == status)//读取字符中
+		{
+
+			if (c == ' ' || c == '\t')//读完字符，读后面属性
+			{
+				buff[0] = count;//存入数量
+				//dat_insert(dat, buff);
+				dat_int32 is_find = dat_search(dat, buff);
+				if (!is_find)
+				{
+					std::cout << "wrong.";
+				}
+				status = 3;//读取属性
+			}
+			else
+			{
+				buff[++count] = c;
+			}
+		}
+
+		if (3 == status)
+		{
+			if (c == '\n')//行位的换行
+			{
+				status = 0;//读取下一行
+			}
+		}
+	}
+	fclose(file);
+
+	return 0;
+}
+
+#if 0
 int test_dat_insert()
 {
 	bool is_find = true;
@@ -776,3 +880,5 @@ int test_dat_insert()
 	dat_dump_all_words(dat);
 	dat_dump(dat);
 }
+
+#endif
