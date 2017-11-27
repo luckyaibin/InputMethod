@@ -7,6 +7,7 @@
 #include<iostream>
 #include<fstream>;
 using std::ofstream;
+using std::ifstream;
 using std::string;
 
 typedef unsigned char dat_uint8;
@@ -116,7 +117,7 @@ dat_t * dat_create(dat_int32 size)
 		if (i == 0)
 		{
 			d->base[i] = -1;
-			d->check[i] = -(init_size-1);
+			d->check[i] = -(init_size - 1);
 		}
 		else if (i == init_size - 1)
 		{
@@ -410,7 +411,7 @@ dat_int32 dat_relocate(dat_t* dat, dat_int32 parent_index, dat_int32* children_i
 			dat_mark_unuse(dat, child_index);//释放
 		}
 		else {//child_index 将要成为s的子节点
-			//新节点
+			  //新节点
 			dat->base[child_new_index] = 0;
 			dat->check[child_new_index] = parent_index;
 		}
@@ -614,6 +615,67 @@ void dat_dump_all_words(dat_t * dat) {
 
 int main()
 {
+		
+	FILE *file = fopen("dict.txt", "rb");
+	if (!file)
+		return -200;
+	dat_t* dat = dat_create(10);
+
+	dat_int32 buff[100] = { 0 };
+	int c = 0;
+	int count = 0;
+	int status = 0;
+	while ( (c = getc(file)) != EOF)
+	{
+		/// 编号 [空格] 字符 [空格] 属性\n
+		if (0 == status) {//读取编号中
+			if (c == ' ' || c == '\t')
+			{
+				status = 1;//读取空格中
+			}
+		}
+
+		if (1 == status)//读取空格中
+		{
+			if (c != ' ' && c != '\t')//读完了空格，读到了字符
+			{
+				memset(buff, 0, sizeof(buff));
+				status = 2;//读取字符
+				count = 0;
+				//buff[++count] = c;
+			}
+		}
+
+		if (2 == status)//读取字符中
+		{
+			
+			if (c == ' ' || c == '\t')//读完字符，读后面属性
+			{
+				buff[0] = count;//存入数量
+				dat_insert(dat, buff);
+				//printf("%s", buff[1]);
+				status = 3;//读取属性
+			}
+			else
+			{
+				buff[++count] = c;
+			}
+		}
+
+		if (3 == status)
+		{
+			if (c == '\n')//行位的换行
+			{
+				status = 0;//读取下一行
+			}
+		}
+	}
+	return 0;
+}
+
+
+int test_dat_insert()
+{
 	bool is_find = true;
 	dat_t* dat = dat_create(10);
 	dat_dump(dat);
@@ -661,7 +723,7 @@ int main()
 	outfile.write((char*)dat->base, dat->size * 4);
 	outfile.write((char*)dat->check, dat->size * 4);
 	outfile.close();
-	
+
 	return 0;
 	dat_int32 count = 10;
 	dat_int32 *word6 = (dat_int32*)malloc(sizeof(dat_int32)* (count + 1));
@@ -707,6 +769,4 @@ int main()
 	is_find = dat_search(dat, word5);
 	dat_dump_all_words(dat);
 	dat_dump(dat);
-
-	return 0;
 }
