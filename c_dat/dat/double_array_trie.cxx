@@ -82,6 +82,9 @@ void set_prop(dat_int32 *to_addr_of_v, dat_int32 prop_v)
 	dat_int32 to_v_no_flag = to_v & (~DAT_FLAG_MASK);
 	to_v = to_v_no_flag | (prop_v << 28);
 	*to_addr_of_v = to_v;
+
+	if (get_prop(to_v) != prop_v)
+		std::cout << "fuck it";
 }
 
 typedef struct dat_base_tag
@@ -613,6 +616,17 @@ void dat_dump_all_words(dat_t * dat) {
 	std::cout << "当前包含:" + all_words + "\n\n";
 }
 
+void write_to_file(void * buff, dat_int32 len,const char *file_name=0)
+{
+	if (!file_name)
+	{
+		file_name = "tmp.txt";
+	}
+	FILE *tofile = fopen(file_name, "ab+");
+	fwrite(buff, sizeof(unsigned  char), len, tofile);
+	fclose(tofile);
+}
+
 dat_int32 dat_create_dictionary(const char * from, const char * to)
 {
 	FILE *file = fopen(from, "rb");
@@ -651,7 +665,34 @@ dat_int32 dat_create_dictionary(const char * from, const char * to)
 			if (c == ' ' || c == '\t')//读完字符，读后面属性
 			{
 				buff[0] = count;//存入数量
+				dat_uint8 check[100] = { 0 };
+				check[0] = 12;
+				check[1] = 229;
+				check[2] = 147;
+				check[3] = 129;
+				check[4] = 231;
+				check[5] = 137;
+				check[6] = 140;
+				check[7] = 230;
+				check[8] = 156;
+				check[9] = 141;
+				check[10] = 233;
+				check[11] = 165;
+				check[12] = 176;
+
+				if (memcmp(check,buff,100) == 0)
+				{
+					write_to_file(&check[1], check[0]);
+					std::cout << "check insert.";
+				}
 				dat_insert(dat, buff);
+
+				dat_int32 is_find = dat_search(dat, buff);
+				if (!is_find)
+				{
+					std::cout << "111 wrong.";
+				}
+
 				//printf("%s", buff[1]);
 				//outfile.write((char*)&buff[1], count);
 				status = 3;//读取属性
@@ -670,6 +711,81 @@ dat_int32 dat_create_dictionary(const char * from, const char * to)
 			}
 		}
 	}
+	//////////////////test///////////
+	//遍历一边，检查是否每个在dat里都能找到
+	do {
+		FILE *file2 = fopen("dict.txt", "rb");
+		if (!file2)
+			return -200;
+		dat_uint8 buff[100] = { 0 };
+		int c = 0;
+		int count = 0;
+		int status = 0;
+		while ((c = getc(file2)) != EOF)
+		{
+			/// 编号 [空格] 字符 [空格] 属性\n
+			if (0 == status) {//读取编号中
+				if (c == ' ' || c == '\t')
+				{
+					status = 1;//读取空格中
+				}
+			}
+
+			if (1 == status)//读取空格中
+			{
+				if (c != ' ' && c != '\t')//读完了空格，读到了字符
+				{
+					memset(buff, 0, sizeof(buff));
+					status = 2;//读取字符
+					count = 0;
+					//buff[++count] = c;
+				}
+			}
+
+			if (2 == status)//读取字符中
+			{
+
+				if (c == ' ' || c == '\t')//读完字符，读后面属性
+				{
+					buff[0] = count;//存入数量
+					//dat_insert(dat, buff);
+					dat_int32 is_find = dat_search(dat, buff);
+					if (!is_find)
+					{
+						write_to_file(&buff[1], buff[0]);
+						std::cout << "wrong.";
+					}
+					status = 3;//读取属性
+				}
+				else
+				{
+					buff[++count] = c;
+				}
+			}
+
+			if (3 == status)
+			{
+				if (c == '\n')//行位的换行
+				{
+					status = 0;//读取下一行
+				}
+			}
+		}
+		fclose(file2);
+
+	} while (0);
+	 
+
+
+
+
+
+
+
+
+
+
+	////////////////////////
 	fclose(file);
 
 	FILE *tofile = fopen(to, "wb");
@@ -683,6 +799,11 @@ dat_int32 dat_create_dictionary(const char * from, const char * to)
 	free(dat->base);
 	free(dat->check);
 	free(dat);
+
+
+
+
+
 	return 0;
 }
 
@@ -707,7 +828,7 @@ dat_t* dat_load_dictionary(const char * file_name)
 	fread(dat->check, sizeof(dat_int32), size, file);
 	return dat;
 }
-
+ 
 int main()
 {
 
@@ -715,8 +836,9 @@ int main()
 	//ofstream outfile;
 	//outfile.open("dat_dat_log.txt", std::ios::app | std::ios::binary);
  
-	//dat_create_dictionary("dict.txt", "dat_dict.txt");
+	dat_create_dictionary("dict.txt", "dat_dict.txt");
 
+	return 0;
 
 	dat_t * dat = dat_load_dictionary("dat_dict.txt");
 
