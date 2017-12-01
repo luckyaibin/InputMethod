@@ -670,41 +670,7 @@ dat_int32 dat_create_dictionary(const char * from, const char * to)
 			if (c == ' ' || c == '\t')//读完字符，读后面属性
 			{
 				buff[0] = count;//存入数量
-				dat_uint8 check[100] = { 0 };
-				check[0] = 12;
-				check[1] = 229;
-				check[2] = 147;
-				check[3] = 129;
-				check[4] = 231;
-				check[5] = 137;
-				check[6] = 140;
-				check[7] = 230;
-				check[8] = 156;
-				check[9] = 141;
-				check[10] = 233;
-				check[11] = 165;
-				check[12] = 176;
-				int same = memcmp(check, buff, 100) == 0;
-				if (same)
-				{
-					std::cout << "check insert.";
-					dat_dump(dat);
-				}
 				dat_insert(dat, buff);
-
-				dat_int32 is_find = dat_search(dat, buff);
-				if (!is_find)
-				{
-					if (same)
-					{
-						dat_dump(dat);
-					}
-					write_to_file(&buff[1], buff[0], "not_found_after_insert.txt");
-					std::cout << "111 wrong.";
-				}
-
-				//printf("%s", buff[1]);
-				//outfile.write((char*)&buff[1], count);
 				status = 3;//读取属性
 			}
 			else
@@ -721,82 +687,7 @@ dat_int32 dat_create_dictionary(const char * from, const char * to)
 			}
 		}
 	}
-	//////////////////test///////////
-	//遍历一边，检查是否每个在dat里都能找到
-	do {
-		FILE *file2 = fopen("dict.txt", "rb");
-		if (!file2)
-			return -200;
-		dat_uint8 buff[100] = { 0 };
-		int c = 0;
-		int count = 0;
-		int status = 0;
-		while ((c = getc(file2)) != EOF)
-		{
-			/// 编号 [空格] 字符 [空格] 属性\n
-			if (0 == status) {//读取编号中
-				if (c == ' ' || c == '\t')
-				{
-					status = 1;//读取空格中
-				}
-			}
-
-			if (1 == status)//读取空格中
-			{
-				if (c != ' ' && c != '\t')//读完了空格，读到了字符
-				{
-					memset(buff, 0, sizeof(buff));
-					status = 2;//读取字符
-					count = 0;
-					//buff[++count] = c;
-				}
-			}
-
-			if (2 == status)//读取字符中
-			{
-
-				if (c == ' ' || c == '\t')//读完字符，读后面属性
-				{
-					buff[0] = count;//存入数量
-									//dat_insert(dat, buff);
-					dat_int32 is_find = dat_search(dat, buff);
-					if (!is_find)
-					{
-						write_to_file(&buff[1], buff[0]);
-						write_to_file("\n",1);
-						std::cout << "wrong.";
-					}
-					status = 3;//读取属性
-				}
-				else
-				{
-					buff[++count] = c;
-				}
-			}
-
-			if (3 == status)
-			{
-				if (c == '\n')//行位的换行
-				{
-					status = 0;//读取下一行
-				}
-			}
-		}
-		fclose(file2);
-
-	} while (0);
-
-
-
-
-
-
-
-
-
-
-
-	////////////////////////
+ 
 	fclose(file);
 
 	FILE *tofile = fopen(to, "wb");
@@ -847,10 +738,7 @@ int main()
 	//ofstream outfile;
 	//outfile.open("dat_dat_log.txt", std::ios::app | std::ios::binary);
 
-	dat_create_dictionary("dict.txt", "dat_dict.txt");
-
-	return 0;
-
+	//dat_create_dictionary("dict.txt", "dat_dict.txt");
 	dat_t * dat = dat_load_dictionary("dat_dict.txt");
 
 
@@ -911,6 +799,9 @@ int main()
 			}
 		}
 	}
+
+	dat_uint8 test[10] = { 4,'a','a','b','b' };
+	dat_int32 is_find = dat_search(dat, test);
 	fclose(file);
 
 	return 0;
